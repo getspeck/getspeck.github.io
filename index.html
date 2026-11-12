@@ -228,7 +228,17 @@
 <script>
 // ---- Settings -------------------------------------------------------------
 // Checkout links go here once payments are set up (Stripe / RevenueCat Web Billing).
-const CHECKOUT = { credits5: null, credits20: null, credits50: null, plus: null };
+// RevenueCat Web Purchase Links (Stripe). Buyers don't need an account: RevenueCat emails
+// them a link that opens Speck and adds the purchase to their Sky.
+// LIVE links appear in RevenueCat once Stripe is live; until then the SANDBOX ones are used
+// only when this page is opened with ?sandbox (test cards, nothing is charged).
+const PACKS_LIVE = null, PLUS_LIVE = null;
+const PACKS_SANDBOX = "https://pay.rev.cat/sandbox/ndcmdfdlpbfykrbb/";
+const PLUS_SANDBOX = "https://pay.rev.cat/sandbox/mqdifishrwajbaot/";
+const sandbox = new URLSearchParams(location.search).has("sandbox");
+const PACKS = PACKS_LIVE ?? (sandbox ? PACKS_SANDBOX : null);
+const PLUS = PLUS_LIVE ?? (sandbox ? PLUS_SANDBOX : null);
+const CHECKOUT = { credits5: PACKS, credits20: PACKS, credits50: PACKS, plus: PLUS };
 const TESTFLIGHT = null; // public TestFlight link
 // The Sky begins at midnight on January 1, 2027, in the visitor's own time zone.
 const LAUNCH = new Date(2027, 0, 1, 0, 0, 0);
