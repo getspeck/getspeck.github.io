@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Speck — Thoughts in the Sky</title>
+<meta name="description" content="Release a thought into a sky shared by everyone. Anonymous. Permanent. The Sky begins January 1, 2027.">
+<meta name="theme-color" content="#04050a">
+<meta property="og:title" content="Speck — Thoughts in the Sky">
+<meta property="og:description" content="The Sky begins January 1, 2027. Until then, everything is a rehearsal.">
+<style>
+  :root {
+    --bg: #04050a;
+    --text: #f2f2f7;
+    --dim: rgba(242, 242, 247, 0.62);
+    --faint: rgba(242, 242, 247, 0.38);
+    --line: rgba(242, 242, 247, 0.12);
+    --glass: rgba(20, 22, 32, 0.42);
+    --melancholy: #7fa8ff; --wonder: #b49cff; --love: #ff9cc8; --hope: #8fe3b0; --joy: #ffc97a;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { background: var(--bg); scroll-behavior: smooth; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 17px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  canvas#sky { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; touch-action: pan-y; cursor: grab; }
+  canvas#sky.dragging { cursor: grabbing; }
+  .veil { position: fixed; inset: 0; pointer-events: none; background: var(--bg); opacity: var(--veil, 0); transition: opacity .2s linear; }
+
+  #thought {
+    position: fixed; z-index: 3; pointer-events: none; max-width: min(320px, calc(100vw - 32px));
+    font: 400 19px/1.35 -apple-system, "SF Pro Display", "Inter", sans-serif; letter-spacing: -0.01em;
+    color: var(--text); opacity: 0; transform: translateY(6px); transition: opacity .7s ease, transform .7s ease;
+    text-shadow: 0 0 24px rgba(4,5,10,.9), 0 0 4px rgba(4,5,10,.9);
+  }
+  #thought.on { opacity: 1; transform: none; }
+  #thought small { display: block; margin-top: 4px; font-size: 12px; letter-spacing: .02em; color: var(--faint); }
+
+  main { position: relative; z-index: 2; pointer-events: none; }
+  main a, main button, main .card { pointer-events: auto; }
+  section { min-height: 100vh; display: grid; place-items: center; padding: 96px 16px; }
+  .wrap { width: 100%; max-width: 680px; }
+
+  /* Hero */
+  .hero { text-align: center; min-height: 100svh; }
+  .mark { font-size: 13px; letter-spacing: .5em; text-indent: .5em; color: var(--dim); text-transform: uppercase; }
+  .count { display: flex; justify-content: center; gap: clamp(14px, 4vw, 40px); margin: 28px 0 22px; font-variant-numeric: tabular-nums; }
+  .count div { display: grid; gap: 4px; }
+  .count b { font: 200 clamp(44px, 11vw, 96px)/1 -apple-system, "SF Pro Display", "Inter", sans-serif; letter-spacing: -0.03em; }
+  .count span { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--faint); }
+  .hero h1 { font: 400 clamp(22px, 4.6vw, 30px)/1.25 -apple-system, "SF Pro Display", "Inter", sans-serif; letter-spacing: -0.015em; }
+  .hero p { margin-top: 10px; color: var(--dim); }
+  .cue { margin-top: 56px; font-size: 13px; color: var(--faint); letter-spacing: .02em; }
+  .cue::after { content: ""; display: block; width: 1px; height: 36px; margin: 14px auto 0; background: linear-gradient(var(--faint), transparent); animation: drip 2.4s ease-in-out infinite; }
+  @keyframes drip { 0%,100% { opacity: .25; transform: scaleY(.6); transform-origin: top; } 50% { opacity: 1; transform: none; } }
+
+  /* Story */
+  .eyebrow { font-size: 12px; letter-spacing: .24em; text-transform: uppercase; color: var(--faint); margin-bottom: 18px; }
+  h2 { font: 300 clamp(30px, 6vw, 46px)/1.12 -apple-system, "SF Pro Display", "Inter", sans-serif; letter-spacing: -0.025em; margin-bottom: 22px; }
+  .lead { font-size: clamp(18px, 2.6vw, 21px); color: var(--dim); }
+  .lead + .lead { margin-top: 14px; }
+
+  .timeline { list-style: none; padding: 0; margin-top: 10px; border-left: 1px solid var(--line); }
+  .timeline li { position: relative; padding: 0 0 34px 26px; }
+  .timeline li:last-child { padding-bottom: 0; }
+  .timeline li::before { content: ""; position: absolute; left: -4px; top: 9px; width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
+  .timeline li.now::before { background: var(--hope); box-shadow: 0 0 12px var(--hope); }
+  .timeline li.one::before { background: #fff; box-shadow: 0 0 16px #fff, 0 0 40px var(--wonder); }
+  .timeline time { font-size: 13px; letter-spacing: .06em; color: var(--faint); text-transform: uppercase; }
+  .timeline h3 { font-weight: 500; font-size: 19px; margin: 2px 0 4px; }
+  .timeline p { color: var(--dim); }
+
+  /* Offer */
+  .packs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 30px; }
+  .card {
+    background: var(--glass); border: 1px solid var(--line); border-radius: 18px;
+    -webkit-backdrop-filter: blur(18px) saturate(1.2); backdrop-filter: blur(18px) saturate(1.2);
+  }
+  .pack { padding: 20px 14px 16px; text-align: center; display: grid; gap: 4px; color: inherit; font: inherit; cursor: pointer; transition: border-color .2s, transform .2s; }
+  .pack:hover, .pack:focus-visible { border-color: rgba(242,242,247,.35); transform: translateY(-2px); outline: none; }
+  .pack b { font: 300 34px/1 -apple-system, "SF Pro Display", "Inter", sans-serif; font-variant-numeric: tabular-nums; }
+  .pack span { font-size: 13px; color: var(--faint); }
+  .pack em { font-style: normal; margin-top: 8px; font-size: 15px; }
+  .pack .tag { font-size: 11px; letter-spacing: .08em; color: var(--hope); text-transform: uppercase; min-height: 14px; }
+  .fine { margin-top: 14px; font-size: 13px; color: var(--faint); }
+
+  .member { margin-top: 64px; padding: 30px 24px 26px; position: relative; overflow: hidden; }
+  .member::before { content: ""; position: absolute; inset: -40% -20% auto auto; width: 320px; height: 320px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(180,156,255,.22), transparent 65%); pointer-events: none; }
+  .member .eyebrow { color: var(--wonder); margin-bottom: 8px; }
+  .member h3 { font: 400 28px/1.15 -apple-system, "SF Pro Display", "Inter", sans-serif; letter-spacing: -0.02em; }
+  .price { margin: 8px 0 20px; color: var(--dim); }
+  .price b { font: 300 40px/1 -apple-system, "SF Pro Display", "Inter", sans-serif; color: var(--text); letter-spacing: -0.02em; }
+  .perks { list-style: none; padding: 0; display: grid; gap: 14px; margin-bottom: 26px; }
+  .perks li { display: grid; grid-template-columns: 22px 1fr; gap: 12px; }
+  .perks svg { margin-top: 4px; }
+  .perks strong { font-weight: 500; display: block; }
+  .perks span { color: var(--dim); font-size: 15px; }
+  .primary {
+    display: block; width: 100%; padding: 15px 20px; border: 0; border-radius: 999px; cursor: pointer;
+    background: var(--text); color: #0a0b12; font: 600 17px/1 -apple-system, "SF Pro Text", "Inter", sans-serif;
+    transition: transform .15s, box-shadow .3s;
+  }
+  .primary:hover { box-shadow: 0 0 40px rgba(180,156,255,.35); }
+  .primary:active { transform: scale(.98); }
+
+  #note { min-height: 22px; margin-top: 14px; text-align: center; font-size: 14px; color: var(--hope); opacity: 0; transition: opacity .4s; }
+  #note.on { opacity: 1; }
+
+  footer { position: relative; z-index: 2; text-align: center; padding: 40px 16px calc(48px + env(safe-area-inset-bottom)); color: var(--faint); font-size: 14px; }
+  footer a { color: var(--dim); text-decoration: none; border-bottom: 1px solid var(--line); }
+  footer a:hover { color: var(--text); }
+  footer p + p { margin-top: 10px; }
+
+  .reveal { opacity: 0; transform: translateY(18px); transition: opacity 1s ease, transform 1s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+
+  @media (max-width: 520px) {
+    body { font-size: 16px; }
+    .packs { gap: 8px; }
+    .pack { padding: 16px 6px 14px; }
+    .pack b { font-size: 28px; }
+    .member { padding: 26px 18px 20px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .cue::after { animation: none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="sky" aria-hidden="true"></canvas>
+<div class="veil" aria-hidden="true"></div>
+<div id="thought" aria-live="polite"></div>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <div class="mark">Speck</div>
+      <div class="count" role="timer" aria-label="Time until the Sky begins">
+        <div><b id="d">--</b><span>days</span></div>
+        <div><b id="h">--</b><span>hours</span></div>
+        <div><b id="m">--</b><span>min</span></div>
+        <div><b id="s">--</b><span>sec</span></div>
+      </div>
+      <h1 id="headline">The Sky begins January 1, 2027.</h1>
+      <p>Until then, every light you see is a rehearsal.</p>
+      <div class="cue" id="cue">Touch a light to read it</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap reveal">
+      <div class="eyebrow">What Speck is</div>
+      <h2>Every light is someone’s thought.</h2>
+      <p class="lead">Write what’s on your mind, up to 100 characters at a time, and release it. It becomes a light in a sky shared by everyone, drifting further away the longer it’s been there.</p>
+      <p class="lead">No names. No followers. No likes to chase. Someone might feel what you wrote, and neither of you will ever know who the other is.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap reveal">
+      <div class="eyebrow">What happens at midnight</div>
+      <h2>Everything before it fades.<br>Everything after it stays.</h2>
+      <ol class="timeline">
+        <li class="now">
+          <time>Now</time>
+          <h3>The rehearsal</h3>
+          <p>Speck is in beta. Thoughts released before January 1 are a demo, so people can feel how it works. None of them will be kept.</p>
+        </li>
+        <li>
+          <time>December 31, 11:59 PM</time>
+          <h3>The Sky goes dark</h3>
+          <p>The demo Sky is cleared. Every light goes out.</p>
+        </li>
+        <li class="one">
+          <time>January 1, 2027, 12:00 AM</time>
+          <h3>Speck No. 1</h3>
+          <p>The first real thought. From then on, nothing is deleted and nothing can be edited. The Sky only grows.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="reserve">
+    <div class="wrap reveal">
+      <div class="eyebrow">Be there at midnight</div>
+      <h2>Arrive with blank specks.</h2>
+      <p class="lead">Each blank speck holds one line of a thought. Reserve some now and they’ll be waiting in your Sky when it begins.</p>
+      <div class="packs">
+        <button class="card pack" data-product="credits5"><span class="tag"></span><b>5</b><span>blank specks</span><em>$0.99</em></button>
+        <button class="card pack" data-product="credits20"><span class="tag">Most chosen</span><b>20</b><span>blank specks</span><em>$2.99</em></button>
+        <button class="card pack" data-product="credits50"><span class="tag"></span><b>50</b><span>blank specks</span><em>$5.99</em></button>
+      </div>
+      <p class="fine">Reserved specks arrive as a code you redeem in the app. Fully refundable until January 1.</p>
+
+      <div class="card member">
+        <div class="eyebrow">Founding Member</div>
+        <h3>Speck Plus</h3>
+        <div class="price"><b>$4.99</b> / month, starting January 1</div>
+        <ul class="perks">
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b49cff" stroke-width="1.6"><path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6z"/></svg>
+            <div><strong>70 blank specks every month</strong><span>Enough to say what you need to, whenever you need to.</span></div></li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b49cff" stroke-width="1.6"><circle cx="5" cy="17" r="1.6"/><circle cx="11" cy="7" r="1.6"/><circle cx="19" cy="12" r="1.6"/><path d="M6.2 15.8l3.7-7.5M12.4 7.8l5.2 3.4"/></svg>
+            <div><strong>Draw your constellations</strong><span>Shape how a multi-line thought sits in the Sky.</span></div></li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b49cff" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg>
+            <div><strong>Member glow</strong><span>A subtle shimmer on your thoughts. Their mood color never changes.</span></div></li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b49cff" stroke-width="1.6"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>
+            <div><strong>Your Year in the Sky</strong><span>A private look back at everything you released.</span></div></li>
+        </ul>
+        <button class="primary" data-product="plus">Become a Founding Member</button>
+      </div>
+      <p id="note" role="status"></p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>Anonymous. Permanent. Yours.</p>
+  <p><a id="beta" href="#">Try the beta on TestFlight</a></p>
+</footer>
+
+<script>
+// ---- Settings -------------------------------------------------------------
+// Checkout links go here once payments are set up (Stripe / RevenueCat Web Billing).
+const CHECKOUT = { credits5: null, credits20: null, credits50: null, plus: null };
+const TESTFLIGHT = null; // public TestFlight link
+// The Sky begins at midnight on January 1, 2027, in the visitor's own time zone.
+const LAUNCH = new Date(2027, 0, 1, 0, 0, 0);
+
+// ---- Countdown ------------------------------------------------------------
+const pad = (n) => String(n).padStart(2, "0");
+function tick() {
+  const left = Math.max(0, LAUNCH - Date.now());
+  const s = Math.floor(left / 1000);
+  document.getElementById("d").textContent = Math.floor(s / 86400);
+  document.getElementById("h").textContent = pad(Math.floor(s / 3600) % 24);
+  document.getElementById("m").textContent = pad(Math.floor(s / 60) % 60);
+  document.getElementById("s").textContent = pad(s % 60);
+  if (left === 0) document.getElementById("headline").textContent = "The Sky has begun.";
+}
+tick(); setInterval(tick, 1000);
+
+// ---- Buttons --------------------------------------------------------------
+const note = document.getElementById("note");
+document.querySelectorAll("[data-product]").forEach((el) => el.addEventListener("click", () => {
+  const url = CHECKOUT[el.dataset.product];
+  if (url) { location.href = url; return; }
+  note.textContent = "Preorders open very soon. Check back here.";
+  note.classList.add("on");
+  clearTimeout(note.t); note.t = setTimeout(() => note.classList.remove("on"), 3600);
+}));
+const beta = document.getElementById("beta");
+if (TESTFLIGHT) beta.href = TESTFLIGHT; else beta.parentElement.remove();
+
+// Fade sections in as they arrive.
+const io = new IntersectionObserver((es) => es.forEach((e) => e.isIntersecting && e.target.classList.add("in")), { threshold: 0.2 });
+document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+
+// ---- The Sky --------------------------------------------------------------
+const MOODS = [[242,242,247],[127,168,255],[180,156,255],[255,156,200],[143,227,176],[255,201,122]];
+const THOUGHTS = [
+  ["I hope my younger self would be proud of me.", 4], ["Nobody knows I'm learning piano at 41.", 2],
+  ["I laugh louder when I'm sad.", 1], ["Today I finally said no.", 5], ["I miss my grandmother's kitchen.", 1],
+  ["I think I'm falling for my best friend.", 3], ["Some days I just want to be held.", 3],
+  ["I pretend to be busy so nobody asks how I am.", 0], ["The ocean makes me feel small in a good way.", 2],
+  ["I wish I'd called her back.", 1], ["Rain on the window. Nothing else matters.", 2],
+  ["I still sleep with the hallway light on.", 0], ["Maybe the meaning of life is just paying attention.", 2],
+  ["I forgave him. I didn't tell him.", 0], ["My plants are the only thing I haven't given up on.", 4],
+  ["I want to start painting again.", 4], ["Something about 3 AM makes everything honest.", 2],
+  ["I said I love you first. Worth it.", 3], ["Grief is just love with nowhere to go.", 1],
+  ["I'm nine days sober.", 4], ["I got the job!!", 5], ["I hope she's happy, even without me.", 1],
+  ["I don't feel like an adult. I just act like one.", 0], ["I want to be someone's safe place.", 3],
+  ["The first warm day of the year is my favorite day.", 5], ["I've never told anyone I write poetry.", 0],
+  ["I'm learning to like my own company.", 4], ["I feel most like myself on long drives.", 2],
+  ["I hope I'm a good dad.", 4], ["I cried at a dog food commercial today.", 5],
+];
+const CONSTELLATIONS = [
+  [["I moved across the world for a fresh start.", "It's lonely.", "But it's mine."], 4],
+  [["My dad and I don't talk.", "I still drive past his house."], 1],
+  [["We met on a train.", "Forty years later,", "she still saves me the window seat."], 3],
+  [["I quit the job everyone said I was lucky to have.", "Best decision of my life."], 5],
+];
+const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const PARTS = ["late night","early morning","morning","afternoon","evening","night"];
+
+const canvas = document.getElementById("sky"), ctx = canvas.getContext("2d");
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let W = 0, H = 0, DPR = 1;
+let rnd = 7; const rand = () => (rnd = (rnd * 16807) % 2147483647) / 2147483647;
+
+function dirFrom(yaw, pitch) { return [Math.cos(pitch) * Math.sin(yaw), Math.sin(pitch), Math.cos(pitch) * Math.cos(yaw)]; }
+function randomDir(spread = 1) { return dirFrom(rand() * Math.PI * 2, (Math.asin(rand() * 2 - 1)) * spread); }
+
+const dust = Array.from({ length: 2200 }, () => ({ d: randomDir(), a: 0.1 + rand() * 0.45, r: 0.5 + rand() * 0.8, tw: rand() * 6.28 }));
+// Older thoughts, far away: small and dim, too distant to read from here.
+const far = Array.from({ length: 260 }, () => ({ d: randomDir(0.8), mood: Math.floor(rand() * 6), r: 0.5 + rand() * 0.7, tw: rand() * 6.28 }));
+const specks = [];
+THOUGHTS.forEach(([text, mood]) => specks.push({ d: randomDir(0.55), mood, text, r: 1.4 + rand() * 1.4, tw: rand() * 6.28, meta: moment() }));
+const lines = [];
+CONSTELLATIONS.forEach(([parts, mood]) => {
+  const yaw = rand() * 6.28, pitch = (rand() - 0.5) * 0.9, meta = moment(), group = [];
+  parts.forEach((text, i) => {
+    const s = { d: dirFrom(yaw + i * 0.07 + (rand() - .5) * .03, pitch + (rand() - .5) * 0.08), mood, text: parts.join(" "), r: 2 + rand(), tw: rand() * 6.28, meta, group };
+    group.push(s); specks.push(s);
+    if (i) lines.push([group[i - 1], s]);
+  });
+});
+function moment() { const d = DAYS[Math.floor(rand() * 7)], p = PARTS[Math.floor(rand() * 6)]; return `${d} · ${p}`; }
+
+let yaw = 0.4, pitch = 0.08, vyaw = 0, vpitch = 0, drift = reduce ? 0 : 0.000025; // about 1.4° a second
+let fov = 1.0, hot = null, hotAt = 0, lastInput = 0;
+
+function resize() {
+  DPR = Math.min(devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  canvas.width = W * DPR; canvas.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  fov = W < 600 ? 1.0 : 1.25;
+}
+addEventListener("resize", resize); resize();
+
+function project(d) {
+  const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const x1 = d[0] * cy - d[2] * sy, z1 = d[0] * sy + d[2] * cy;
+  const y2 = d[1] * cp - z1 * sp, z2 = d[1] * sp + z1 * cp;
+  if (z2 <= 0.05) return null;
+  const f = (Math.min(W, H) * 0.5) / Math.tan(fov / 2) * 0.8;
+  return [W / 2 + (x1 / z2) * f, H / 2 - (y2 / z2) * f, z2];
+}
+
+function glow(x, y, r, [R, G, B], a) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r * 7);
+  g.addColorStop(0, `rgba(${R},${G},${B},${a})`);
+  g.addColorStop(0.18, `rgba(${R},${G},${B},${a * 0.35})`);
+  g.addColorStop(1, `rgba(${R},${G},${B},0)`);
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 7, 0, 6.283); ctx.fill();
+  ctx.fillStyle = `rgba(255,255,255,${Math.min(1, a * 1.2)})`;
+  ctx.beginPath(); ctx.arc(x, y, r * 0.55, 0, 6.283); ctx.fill();
+}
+
+const thoughtEl = document.getElementById("thought");
+const heroWrap = document.querySelector(".hero .wrap");
+function show(s) {
+  hot = s; hotAt = performance.now();
+  thoughtEl.innerHTML = "";
+  thoughtEl.append(s.text); const meta = document.createElement("small"); meta.textContent = s.meta; thoughtEl.append(meta);
+  thoughtEl.classList.add("on");
+}
+function hide() { hot = null; thoughtEl.classList.remove("on"); }
+
+let t0 = performance.now();
+function frame(now) {
+  const dt = Math.min(50, now - t0); t0 = now;
+  yaw += vyaw + drift * dt; pitch = Math.max(-1.2, Math.min(1.2, pitch + vpitch));
+  vyaw *= 0.94; vpitch *= 0.94;
+  const t = now / 1000;
+
+  ctx.fillStyle = "#04050a"; ctx.fillRect(0, 0, W, H);
+  for (const s of dust) {
+    const p = project(s.d); if (!p) continue;
+    const a = s.a * (0.75 + 0.25 * Math.sin(t * 0.8 + s.tw));
+    ctx.fillStyle = `rgba(225,230,255,${a})`; ctx.fillRect(p[0], p[1], s.r, s.r);
+  }
+  for (const s of far) {
+    const p = project(s.d); if (!p) continue;
+    glow(p[0], p[1], s.r, MOODS[s.mood], 0.22 + 0.12 * Math.sin(t * 0.9 + s.tw));
+  }
+  // Faint constellation lines, a little brighter for the thought being read.
+  for (const [a, b] of lines) {
+    const pa = project(a.d), pb = project(b.d); if (!pa || !pb) continue;
+    const lit = hot && hot.group === a.group;
+    const [R, G, B] = MOODS[a.mood];
+    ctx.strokeStyle = `rgba(${R},${G},${B},${lit ? 0.55 : 0.12})`; ctx.lineWidth = lit ? 1 : 0.7;
+    ctx.beginPath(); ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1]); ctx.stroke();
+  }
+  for (const s of specks) {
+    const p = project(s.d); s.p = p; if (!p) continue;
+    const lit = hot && (hot === s || (hot.group && hot.group === s.group));
+    const pulse = lit ? 1 + 0.5 * Math.exp(-(now - hotAt) / 500) : 1;
+    const a = (0.55 + 0.3 * Math.sin(t * 1.1 + s.tw)) * (lit ? 1.4 : 1);
+    glow(p[0], p[1], s.r * pulse, MOODS[s.mood], Math.min(1, a));
+  }
+  if (hot && hot.p) {
+    const x = Math.min(Math.max(16, hot.p[0] + 18), W - thoughtEl.offsetWidth - 16);
+    // Above the light in the upper half, below it in the lower half.
+    const above = hot.p[1] < H / 2 ? hot.p[1] - thoughtEl.offsetHeight - 14 : hot.p[1] + 16;
+    const y = Math.min(Math.max(16, above), H - thoughtEl.offsetHeight - 16);
+    thoughtEl.style.left = x + "px"; thoughtEl.style.top = y + "px";
+  } else if (hot) hide();
+
+  // When nobody is touching the Sky, a thought surfaces on its own now and then.
+  const atTop = scrollY < innerHeight * 0.4;
+  if (!atTop && hot) hide();
+  if (atTop && now - lastInput > 4000 && (!hot || now - hotAt > 5200)) {
+    // Only lights clear of the headline, so a thought never lands on top of the words.
+    const box = heroWrap.getBoundingClientRect();
+    const near = specks.filter((s) => s.p && s.p[0] > W * 0.08 && s.p[0] < W * 0.78
+      && ((s.p[1] > 90 && s.p[1] < box.top - 20) || (s.p[1] > box.bottom + 10 && s.p[1] < H - 110))
+      && (!hot || s.text !== hot.text));
+    if (near.length) show(near[Math.floor(Math.random() * near.length)]);
+    else if (hot) hide();
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// Fade the Sky slightly behind the reading sections.
+addEventListener("scroll", () => {
+  document.documentElement.style.setProperty("--veil", Math.min(0.55, scrollY / innerHeight * 0.55));
+  if (scrollY > innerHeight * 0.5 && hot) hide();
+}, { passive: true });
+
+// Drag to look around; tap a light to read it.
+let drag = null;
+canvas.addEventListener("pointerdown", (e) => {
+  drag = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: false, type: e.pointerType };
+  lastInput = performance.now();
+});
+addEventListener("pointermove", (e) => {
+  if (drag) {
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 6) {
+      drag.moved = true;
+      // Touch: vertical swipes scroll the page, horizontal ones turn the Sky.
+      if (drag.type !== "touch") { vpitch = dy * 0.0016; canvas.classList.add("dragging"); }
+      vyaw = -dx * 0.0022;
+    }
+    drag.x = e.clientX; drag.y = e.clientY; lastInput = performance.now();
+  } else if (e.pointerType === "mouse" && scrollY < innerHeight * 0.5) {
+    const s = nearest(e.clientX, e.clientY, 22);
+    if (s && s !== hot) { show(s); lastInput = performance.now(); }
+  }
+});
+addEventListener("pointerup", (e) => {
+  if (drag && !drag.moved && scrollY < innerHeight * 0.4) {
+    const s = nearest(e.clientX, e.clientY, 34);
+    if (s) show(s); else hide();
+  }
+  drag = null; lastInput = performance.now(); canvas.classList.remove("dragging");
+});
+function nearest(x, y, radius) {
+  let best = null, bd = radius;
+  for (const s of specks) { if (!s.p) continue; const d = Math.hypot(s.p[0] - x, s.p[1] - y); if (d < bd) { bd = d; best = s; } }
+  return best;
+}
+if (matchMedia("(pointer: fine)").matches) document.getElementById("cue").textContent = "Drag to look around · hover a light to read it";
+</script>
+</body>
+</html>
