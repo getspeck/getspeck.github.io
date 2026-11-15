@@ -161,7 +161,7 @@
       </div>
       <h1 id="headline">The Sky begins January 1, 2027.</h1>
       <p>Until then, every light you see is a rehearsal.</p>
-      <div class="cue" id="cue">Touch a light to read it</div>
+      <div class="cue" id="cue">Touch a star to read its contents</div>
     </div>
   </section>
 
@@ -521,7 +521,7 @@ function nearest(x, y, radius) {
   for (const s of specks) { if (!s.p) continue; const d = Math.hypot(s.p[0] - x, s.p[1] - y); if (d < bd) { bd = d; best = s; } }
   return best;
 }
-if (matchMedia("(pointer: fine)").matches) document.getElementById("cue").textContent = "Drag to look around · hover a light to read it";
+if (matchMedia("(pointer: fine)").matches) document.getElementById("cue").textContent = "Drag to look around · hover a star to read its contents";
 </script>
 </body>
 </html>
