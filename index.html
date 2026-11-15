@@ -261,7 +261,7 @@ const sandbox = new URLSearchParams(location.search).has("sandbox");
 const PACKS = PACKS_LIVE ?? (sandbox ? PACKS_SANDBOX : null);
 const PLUS = PLUS_LIVE ?? (sandbox ? PLUS_SANDBOX : null);
 const CHECKOUT = { credits5: PACKS, credits20: PACKS, credits50: PACKS, plus: PLUS };
-const TESTFLIGHT = null; // public TestFlight link
+const TESTFLIGHT = "https://testflight.apple.com/join/DFXTSrY1"; // public TestFlight link (group "Public Beta")
 // The Sky begins at midnight on January 1, 2027, in the visitor's own time zone.
 const LAUNCH = new Date(2027, 0, 1, 0, 0, 0);
 
