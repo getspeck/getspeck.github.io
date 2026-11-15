@@ -408,8 +408,9 @@ function glow(x, y, r, [R, G, B], a) {
 
 const thoughtEl = document.getElementById("thought");
 const heroWrap = document.querySelector(".hero .wrap");
-function show(s) {
-  hot = s; hotAt = performance.now();
+let hotByUser = false, hotScroll = 0;
+function show(s, byUser = false) {
+  hot = s; hotAt = performance.now(); hotByUser = byUser; hotScroll = scrollY;
   thoughtEl.innerHTML = "";
   thoughtEl.append(s.text); const meta = document.createElement("small"); meta.textContent = s.meta; thoughtEl.append(meta);
   thoughtEl.classList.add("on");
@@ -458,7 +459,7 @@ function frame(now) {
 
   // When nobody is touching the Sky, a thought surfaces on its own now and then.
   const atTop = scrollY < innerHeight * 0.4;
-  if (!atTop && hot) hide();
+  if (!atTop && hot && !hotByUser) hide();
   if (atTop && now - lastInput > 4000 && (!hot || now - hotAt > 5200)) {
     // Only lights clear of the headline, so a thought never lands on top of the words.
     const box = heroWrap.getBoundingClientRect();
@@ -475,7 +476,8 @@ requestAnimationFrame(frame);
 // Fade the Sky slightly behind the reading sections.
 addEventListener("scroll", () => {
   document.documentElement.style.setProperty("--veil", Math.min(0.55, scrollY / innerHeight * 0.55));
-  if (scrollY > innerHeight * 0.5 && hot) hide();
+  // A thought someone opened stays until they scroll on; the self-surfacing ones stay at the top.
+  if (hot && (hotByUser ? Math.abs(scrollY - hotScroll) > 120 : scrollY > innerHeight * 0.5)) hide();
 }, { passive: true });
 
 // Drag to look around; tap a light to read it.
@@ -494,18 +496,29 @@ addEventListener("pointermove", (e) => {
       vyaw = -dx * 0.0022;
     }
     drag.x = e.clientX; drag.y = e.clientY; lastInput = performance.now();
-  } else if (e.pointerType === "mouse" && scrollY < innerHeight * 0.5) {
+  } else if (e.pointerType === "mouse" && e.target === canvas && !overContent(e.clientX, e.clientY)) {
     const s = nearest(e.clientX, e.clientY, 22);
-    if (s && s !== hot) { show(s); lastInput = performance.now(); }
+    if (s && s !== hot) { show(s, true); lastInput = performance.now(); }
   }
 });
 addEventListener("pointerup", (e) => {
-  if (drag && !drag.moved && scrollY < innerHeight * 0.4) {
+  if (drag && !drag.moved && !overContent(e.clientX, e.clientY)) {
     const s = nearest(e.clientX, e.clientY, 34);
-    if (s) show(s); else hide();
+    if (s) show(s, true); else hide();
   }
   drag = null; lastInput = performance.now(); canvas.classList.remove("dragging");
 });
+// Lights are readable anywhere the Sky shows through, but not from under the page's words
+// or cards (main lets pointer events through to the Sky, so check the content's boxes).
+const CONTENT = "main h1, main h2, main h3, main p, main li, main .count, main .mark, main .eyebrow, main .card, footer p";
+function overContent(x, y) {
+  for (const el of document.querySelectorAll(CONTENT)) {
+    if (el.hidden || el.closest("[hidden]")) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width && x > r.left - 6 && x < r.right + 6 && y > r.top - 6 && y < r.bottom + 6) return true;
+  }
+  return false;
+}
 function nearest(x, y, radius) {
   let best = null, bd = radius;
   for (const s of specks) { if (!s.p) continue; const d = Math.hypot(s.p[0] - x, s.p[1] - y); if (d < bd) { bd = d; best = s; } }
