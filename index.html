@@ -6,6 +6,7 @@
 <title>Speck — Because Words Are Enough</title>
 <meta name="description" content="A universe built from human thoughts. Release a thought, discover another, and become part of a sky that never stops growing.">
 <meta name="theme-color" content="#04050a">
+<meta name="robots" content="noindex">
 <meta property="og:title" content="Speck — Because Words Are Enough">
 <meta property="og:description" content="A universe built from human thoughts. Release a thought, discover another, and become part of a sky that never stops growing.">
 <style>
@@ -132,6 +133,22 @@
   #note { min-height: 22px; margin-top: 14px; text-align: center; font-size: 14px; color: var(--hope); opacity: 0; transition: opacity .4s; }
   #note.on { opacity: 1; }
 
+  /* Early Access gate: the page stays hidden until the password is entered. */
+  body.gated main, body.gated footer { display: none; }
+  /* The Sky stays live behind it: only the box takes taps; thoughts still open around it. */
+  #gate { position: fixed; inset: 0; z-index: 2; display: none; place-items: center; padding: 16px; pointer-events: none; }
+  #gate .box { pointer-events: auto; }
+  body.gated #gate { display: grid; }
+  #gate .box { width: 100%; max-width: 360px; text-align: center; }
+  #gate h1 { font: 300 clamp(30px, 7vw, 40px)/1.15 -apple-system, "SF Pro Display", "Inter", sans-serif; letter-spacing: -0.02em; margin: 18px 0 10px; }
+  #gate p { color: var(--dim); font-size: 15px; }
+  #gate form { display: flex; gap: 8px; margin-top: 22px; }
+  #gate input { flex: 1; min-width: 0; padding: 13px 16px; border-radius: 999px; border: 1px solid var(--line); background: rgba(242,242,247,.06);
+    color: var(--text); font: 16px -apple-system, "SF Pro Text", "Inter", sans-serif; outline: none; }
+  #gate input:focus { border-color: rgba(180,156,255,.6); }
+  #gate button { padding: 13px 20px; border-radius: 999px; border: 0; background: var(--text); color: #0a0b12; cursor: pointer;
+    font: 600 15px -apple-system, "SF Pro Text", "Inter", sans-serif; }
+  #gate .err { min-height: 20px; margin-top: 12px; font-size: 14px; color: #ff9cc8; }
   footer { position: relative; z-index: 2; text-align: center; padding: 40px 16px calc(48px + env(safe-area-inset-bottom)); color: var(--faint); font-size: 14px; }
   footer a { color: var(--dim); text-decoration: none; border-bottom: 1px solid var(--line); }
   footer a:hover { color: var(--text); }
@@ -154,7 +171,20 @@
   }
 </style>
 </head>
-<body>
+<body class="gated">
+<div id="gate" role="dialog" aria-labelledby="gateTitle">
+  <div class="box">
+    <div class="mark">Speck</div>
+    <h1 id="gateTitle">Early Access</h1>
+    <p>Speck is invite-only for now. Enter the password to continue.</p>
+    <form id="gateForm">
+      <input type="password" id="gatePass" placeholder="Password" autocomplete="current-password" aria-label="Password" required>
+      <button type="submit">Enter</button>
+    </form>
+    <p class="err" id="gateErr" role="status"></p>
+    <p><a href="privacy.html" style="color:var(--faint)">Privacy</a> · <a href="terms.html" style="color:var(--faint)">Terms</a> · <a href="support.html" style="color:var(--faint)">Support</a></p>
+  </div>
+</div>
 <canvas id="sky" aria-hidden="true"></canvas>
 <div class="veil" aria-hidden="true"></div>
 <div id="thought" aria-live="polite"></div>
@@ -285,6 +315,30 @@
 </footer>
 
 <script>
+// ---- Early Access gate ------------------------------------------------------
+// Only a SHA-256 of the password is in this file. It hides the page in the browser; it is
+// not server-side security (the source is public), so sign-ups are also closed server-side
+// if needed. Remove the gate (body class, #gate, this block, the robots meta) to open the site.
+const GATE_HASH = "29277112f23034a3528f01484782ecd47c39b307afbeb4c2dfc47d3f516ca125";
+const GATE_KEY = "speck.gate";
+async function gateHash(text) {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("speck-gate:" + text));
+  return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+function openGate() { document.body.classList.remove("gated"); }
+try { if (localStorage.getItem(GATE_KEY) === GATE_HASH) openGate(); } catch {}
+document.getElementById("gateForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const input = document.getElementById("gatePass");
+  if (await gateHash(input.value) === GATE_HASH) {
+    try { localStorage.setItem(GATE_KEY, GATE_HASH); } catch {}
+    openGate();
+  } else {
+    document.getElementById("gateErr").textContent = "That password isn’t right.";
+    input.select();
+  }
+});
+
 // ---- Settings -------------------------------------------------------------
 // Checkout links go here once payments are set up (Stripe / RevenueCat Web Billing).
 // RevenueCat Web Purchase Links (Stripe). Buyers don't need an account: RevenueCat emails
@@ -342,7 +396,7 @@ async function rpc(name, session) {
   const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
     method: "POST", headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${session.access}`, "Content-Type": "application/json" }, body: "{}",
   });
-  if (!r.ok) throw new Error(`${name} ${r.status}`);
+  if (!r.ok) throw new Error(`${name} ${r.status} ${await r.text()}`);
   return r.json();
 }
 function showPlace(number) {
@@ -396,6 +450,7 @@ document.getElementById("appleButton").addEventListener("click", async (e) => {
     button.disabled = false;
     prepareApple().catch(() => {}); // a nonce is good for one attempt
     if (err?.error === "popup_closed_by_user" || err?.error === "user_cancelled_authorize") return;
+    if (String(err?.message).includes("waiting_list_closed")) return placeNote("The waiting list isn’t open yet. Check back soon.");
     if (err?.error === "popup_blocked_by_browser") return placeNote("Your browser blocked the Apple window. Allow pop-ups for getspeck.app and try again.");
     placeNote("Sign in didn’t go through. Please try again.");
   }
@@ -537,6 +592,7 @@ function glow(x, y, r, [R, G, B], a) {
 
 const thoughtEl = document.getElementById("thought");
 const heroWrap = document.querySelector(".hero .wrap");
+const gateBox = document.querySelector("#gate .box");
 let hotByUser = false, hotScroll = 0;
 function show(s, byUser = false) {
   hot = s; hotAt = performance.now(); hotByUser = byUser; hotScroll = scrollY;
@@ -591,7 +647,7 @@ function frame(now) {
   if (!atTop && hot && !hotByUser) hide();
   if (atTop && now - lastInput > 4000 && (!hot || now - hotAt > 5200)) {
     // Only lights clear of the headline, so a thought never lands on top of the words.
-    const box = heroWrap.getBoundingClientRect();
+    const box = (document.body.classList.contains("gated") ? gateBox : heroWrap).getBoundingClientRect();
     const near = specks.filter((s) => s.p && s.p[0] > W * 0.08 && s.p[0] < W * 0.78
       && ((s.p[1] > 90 && s.p[1] < box.top - 20) || (s.p[1] > box.bottom + 10 && s.p[1] < H - 110))
       && (!hot || s.text !== hot.text));
@@ -639,7 +695,7 @@ addEventListener("pointerup", (e) => {
 });
 // Lights are readable anywhere the Sky shows through, but not from under the page's words
 // or cards (main lets pointer events through to the Sky, so check the content's boxes).
-const CONTENT = "main h1, main h2, main h3, main p, main li, main .count, main .mark, main .eyebrow, main .card, footer p";
+const CONTENT = "#gate .box, main h1, main h2, main h3, main p, main li, main .count, main .mark, main .eyebrow, main .card, footer p";
 function overContent(x, y) {
   for (const el of document.querySelectorAll(CONTENT)) {
     if (el.hidden || el.closest("[hidden]")) continue;
