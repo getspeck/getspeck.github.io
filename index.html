@@ -100,6 +100,7 @@
   .perks svg { margin-top: 4px; }
   .perks strong { font-weight: 500; display: block; }
   .perks span { color: var(--dim); font-size: 15px; }
+  .perks .soon { font-style: normal; font-weight: 400; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin-left: 6px; }
   .primary {
     display: block; width: 100%; padding: 15px 20px; border: 0; border-radius: 999px; cursor: pointer;
     background: var(--text); color: #0a0b12; font: 600 17px/1 -apple-system, "SF Pro Text", "Inter", sans-serif;
@@ -200,7 +201,7 @@
         <div><b id="s">--</b><span>sec</span></div>
       </div>
       <h1>Because words are enough.</h1>
-      <p id="headline">The Multiverse for Thoughts begins January 1, 2027 · 00:00 UTC.</p>
+      <p id="headline">A shared sky of thoughts, written by everyone. The permanent Sky begins January 1, 2027 · 12:00 a.m. EST.</p>
       <div class="cue" id="cue">Touch a star to read its contents</div>
     </div>
   </section>
@@ -222,18 +223,18 @@
       <ol class="timeline">
         <li class="now">
           <time>Now</time>
-          <h3>Try the Sky</h3>
-          <p>Before Genesis, explore the universe. Release a demo thought, choose its color, and discover what others have left behind. The Rehearsal Sky is temporary: demo specks never enter the permanent Sky.</p>
+          <h3>Explore the Sky</h3>
+          <p>Explore the Sky before Genesis. Look around, discover sample thoughts, and get a feel for the universe. The Rehearsal Sky is temporary. Its contents disappear at the Great Reset and never enter the permanent Sky.</p>
         </li>
         <li>
-          <time>December 31, 2026 · 23:59 UTC</time>
+          <time>December 31, 2026 · 11:59 p.m. EST</time>
           <h3>The Great Reset</h3>
-          <p>All demo and rehearsal inscriptions are cleared. The Sky returns to absolute darkness.</p>
+          <p>All demo and rehearsal thoughts are cleared. The Sky returns to darkness, ready for Genesis.</p>
         </li>
         <li class="one">
-          <time>January 1, 2027 · 00:00 UTC</time>
+          <time>January 1, 2027 · 12:00 a.m. EST</time>
           <h3>Genesis · 001 awaiting</h3>
-          <p>The permanent Sky begins. The first real thought enters the universe, and every inscription after it becomes part of its growing history. Nothing is deleted. Nothing can be edited.</p>
+          <p>Midnight in New York. One beginning, everywhere. The permanent Sky begins, and the first real thought starts its history. Once released, your words can’t be edited. Write something you’re ready to leave behind.</p>
         </li>
         <li>
           <time>Planned</time>
@@ -241,9 +242,9 @@
           <p>Connect your thoughts. Individual specks can be connected into larger collections: build a narrative, preserve a series of ideas, or connect thoughts that belong together. A single thought can stand alone. Connected thoughts can tell a story.</p>
         </li>
         <li>
-          <time>Coming spring/summer 2027</time>
+          <time>Planned for spring/summer 2027</time>
           <h3>Nebulas</h3>
-          <p>Where thoughts become collective intelligence. Shared spaces hosted around topics, questions, and communities: a host creates a Nebula, others contribute their thoughts, and over time individual perspectives reveal shared ideas, disagreements, patterns, and unexpected connections.</p>
+          <p>Shared skies for communities, topics, and questions. Host a Nebula, invite others to contribute, and discover what takes shape when thoughts come together.</p>
         </li>
       </ol>
       <p class="fine">The universe will keep growing. Planned features and release dates are subject to change.</p>
@@ -254,28 +255,28 @@
     <div class="wrap reveal">
       <div class="eyebrow">Be there for Genesis</div>
       <h2>Load your specks.</h2>
-      <p class="lead">Every permanent inscription begins with a blank speck. Each one holds one line of thought, up to 100 characters. Choose yours now and be ready to release your thoughts when Genesis begins.</p>
+      <p class="lead">Every permanent inscription begins with a blank speck. Each one holds up to 100 characters. Choose yours now and be ready to release your thoughts when Genesis begins.</p>
 
       <div class="card place" id="place">
         <div id="placeOut">
-          <div class="eyebrow">Waiting list</div>
+          <div class="eyebrow">Prepare for Genesis</div>
           <h3>Your place in Genesis.</h3>
-          <p>The Sky begins January 1, 2027. Sign in with Apple to create your account, prepare your specks, and be part of the first permanent inscriptions in the universe. On January 1, sign in with the same Apple ID in Speck.</p>
+          <p>Create your account with Apple and prepare your specks before the Sky begins. When Genesis arrives, sign in to Speck with the same Apple ID. Your blank specks will be ready.</p>
           <button class="apple" id="appleButton" type="button"><svg viewBox="0 0 17 20" fill="currentColor" aria-hidden="true"><path d="M14.2 10.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.3-.9-1.7 0-3.3 1-4.2 2.5-1.8 3.1-.5 7.7 1.3 10.2.8 1.2 1.8 2.6 3.1 2.5 1.2 0 1.7-.8 3.2-.8s1.9.8 3.2.8c1.3 0 2.2-1.2 3-2.4 1-1.4 1.4-2.7 1.4-2.8 0 0-2.7-1-2.3-4.1zM11.7 3c.7-.8 1.1-1.9 1-3-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.8-1 2.9 1 .1 2.1-.6 2.8-1.4z"/></svg>Sign in with Apple</button>
           <p class="fine">Speck doesn’t receive your name or email from Apple.</p>
         </div>
         <div id="placeIn" hidden>
-          <div class="eyebrow">Waiting list</div>
+          <div class="eyebrow">Prepare for Genesis</div>
           <div class="num" id="placeNumber"></div>
           <p>You’re registered. On January 1, sign in with Apple in Speck to pick up your account. Specks you choose below go straight to it.</p>
         </div>
       </div>
       <div class="packs">
-        <button class="card pack" data-product="credits5"><span class="tag"></span><b>5</b><span>blank specks</span><em>$0.99</em></button>
-        <button class="card pack" data-product="credits20"><span class="tag">Most chosen</span><b>20</b><span>blank specks</span><em>$2.99</em></button>
-        <button class="card pack" data-product="credits50"><span class="tag"></span><b>50</b><span>blank specks</span><em>$5.99</em></button>
+        <button class="card pack" data-product="credits10"><span class="tag"></span><b>10</b><span>blank specks</span><em>$0.99</em></button>
+        <button class="card pack" data-product="credits30"><span class="tag">Recommended</span><b>30</b><span>blank specks</span><em>$2.99</em></button>
+        <button class="card pack" data-product="credits70"><span class="tag">Best value</span><b>70</b><span>blank specks</span><em>$5.99</em></button>
       </div>
-      <p class="fine" id="packsFine">Creating an account and exploring the Sky are free. Each line of a thought you release uses one blank speck. We’ll email you a link to open in Speck on January 1, and packs are fully refundable until then.</p>
+      <p class="fine" id="packsFine">Creating an account and exploring the Sky are free. Releasing a permanent thought uses blank specks. Each blank speck holds up to 100 characters; a longer thought uses more, up to 8. Buying without signing in? After checkout you’ll get an email with a link to open in Speck. Packs are fully refundable until Genesis.</p>
 
       <div class="card member">
         <div class="eyebrow">Founding Member</div>
@@ -283,15 +284,16 @@
         <div class="price"><b>$4.99</b> / month. Take your place in the universe.</div>
         <ul class="perks">
           <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b49cff" stroke-width="1.6"><path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6z"/></svg>
-            <div><strong>70 blank specks every month</strong><span>Enough to say what you need to, whenever you need to.</span></div></li>
+            <div><strong>30 blank specks every month</strong><span>Added with each payment. Unused specks never expire.</span></div></li>
           <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b49cff" stroke-width="1.6"><circle cx="5" cy="17" r="1.6"/><circle cx="11" cy="7" r="1.6"/><circle cx="19" cy="12" r="1.6"/><path d="M6.2 15.8l3.7-7.5M12.4 7.8l5.2 3.4"/></svg>
-            <div><strong>Draw your constellations</strong><span>Shape how a multi-line thought sits in the Sky.</span></div></li>
+            <div><strong>More Distills</strong><span>50 a month, instead of 5 to try. Distill suggests shorter versions of your thought; you choose.</span></div></li>
           <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b49cff" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg>
-            <div><strong>Member glow</strong><span>A subtle shimmer on your thoughts. Their mood color never changes.</span></div></li>
+            <div><strong>Member glow <em class="soon">Coming later</em></strong><span>A subtle shimmer on your thoughts. Their mood color never changes.</span></div></li>
           <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b49cff" stroke-width="1.6"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>
-            <div><strong>Your Year in the Sky</strong><span>A private look back at everything you released.</span></div></li>
+            <div><strong>Your Year in the Sky <em class="soon">Coming later</em></strong><span>A private look back at everything you released.</span></div></li>
         </ul>
         <button class="primary" data-product="plus">Become a Founding Member</button>
+        <p class="fine">Charged when you join, then every month. Cancel anytime; Plus continues until the end of the month you paid for. Join before Genesis to receive a Founding Member number. A refund removes it.</p>
       </div>
       <p id="note" role="status"></p>
 
@@ -351,9 +353,10 @@ const PLUS_SANDBOX = "https://pay.rev.cat/sandbox/mqdifishrwajbaot/";
 const sandbox = new URLSearchParams(location.search).has("sandbox");
 const PACKS = PACKS_LIVE ?? (sandbox ? PACKS_SANDBOX : null);
 const PLUS = PLUS_LIVE ?? (sandbox ? PLUS_SANDBOX : null);
-const CHECKOUT = { credits5: PACKS, credits20: PACKS, credits50: PACKS, plus: PLUS };
-// Genesis: one moment for everyone, January 1, 2027 at 00:00 UTC.
-const LAUNCH = new Date(Date.UTC(2027, 0, 1, 0, 0, 0));
+const CHECKOUT = { credits10: PACKS, credits30: PACKS, credits70: PACKS, plus: PLUS };
+// Genesis: one moment for everyone, midnight in New York (the ball drop):
+// January 1, 2027, 12:00 AM EST = 05:00 UTC. Matches app_settings.launch_at.
+const LAUNCH = new Date(Date.UTC(2027, 0, 1, 5, 0, 0));
 
 // ---- Countdown ------------------------------------------------------------
 const pad = (n) => String(n).padStart(2, "0");
@@ -403,7 +406,7 @@ function showPlace(number) {
   document.getElementById("placeOut").hidden = true;
   document.getElementById("placeIn").hidden = false;
   document.getElementById("placeNumber").textContent = `No. ${Number(number).toLocaleString("en-US")}`;
-  document.getElementById("packsFine").textContent = "Creating an account and exploring the Sky are free. Each line of a thought you release uses one blank speck. Specks you choose go straight to your account, and packs are fully refundable until January 1.";
+  document.getElementById("packsFine").textContent = "Creating an account and exploring the Sky are free. Releasing a permanent thought uses blank specks. Each blank speck holds up to 100 characters; a longer thought uses more, up to 8. Specks you choose go straight to your account. Packs are fully refundable until Genesis.";
 }
 async function sha256Hex(text) {
   const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
