@@ -352,22 +352,41 @@ function loadAppleJS() {
     s.onload = resolve; s.onerror = reject; document.head.appendChild(s);
   });
 }
+// iPhone Safari only opens Apple's window if it opens right in the tap, so Apple's script is
+// loaded and set up (with a fresh nonce) ahead of time, and the tap calls signIn() at once.
+let appleNonce = null;
+async function prepareApple() {
+  appleNonce = null;
+  await loadAppleJS();
+  const nonce = crypto.randomUUID();
+  // No scope: Speck never asks Apple for a name or email.
+  AppleID.auth.init({ clientId: APPLE_SERVICES_ID, scope: "", redirectURI: `${location.origin}/`, usePopup: true, nonce: await sha256Hex(nonce) });
+  appleNonce = nonce;
+}
+function placeNote(text) {
+  note.textContent = text;
+  note.classList.add("on"); clearTimeout(note.t); note.t = setTimeout(() => note.classList.remove("on"), 3600);
+}
+if (location.hostname === "getspeck.app") prepareApple().catch(() => {});
 document.getElementById("appleButton").addEventListener("click", async (e) => {
-  const button = e.currentTarget; button.disabled = true;
+  const button = e.currentTarget;
+  // Apple only returns to the address registered for app.speck.web (https://getspeck.app/).
+  if (location.hostname !== "getspeck.app") return placeNote("Sign in with Apple works on getspeck.app.");
+  if (!appleNonce) { prepareApple().catch(() => {}); return placeNote("One moment, then tap again."); }
+  const nonce = appleNonce;
+  const signingIn = AppleID.auth.signIn(); // opens Apple's window during the tap
+  button.disabled = true;
   try {
-    await loadAppleJS();
-    const nonce = crypto.randomUUID();
-    // No scope: Speck never asks Apple for a name or email.
-    AppleID.auth.init({ clientId: APPLE_SERVICES_ID, scope: "", redirectURI: `${location.origin}/`, usePopup: true, nonce: await sha256Hex(nonce) });
-    const res = await AppleID.auth.signIn();
+    const res = await signingIn;
     const session = await auth("id_token", { provider: "apple", id_token: res.authorization.id_token, nonce });
     account = session; store.set(session);
     showPlace(await rpc("join_waiting_list", session));
   } catch (err) {
     button.disabled = false;
+    prepareApple().catch(() => {}); // a nonce is good for one attempt
     if (err?.error === "popup_closed_by_user" || err?.error === "user_cancelled_authorize") return;
-    note.textContent = "Sign in didn’t go through. Please try again.";
-    note.classList.add("on"); clearTimeout(note.t); note.t = setTimeout(() => note.classList.remove("on"), 3600);
+    if (err?.error === "popup_blocked_by_browser") return placeNote("Your browser blocked the Apple window. Allow pop-ups for getspeck.app and try again.");
+    placeNote("Sign in didn’t go through. Please try again.");
   }
 });
 (async () => {
