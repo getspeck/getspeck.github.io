@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Sky · Speck</title>
+<meta name="description" content="Explore the Sky live, with everyone. Release a demo thought before Genesis.">
+<meta name="theme-color" content="#04050a">
+<meta name="robots" content="noindex">
+<style>
+  :root {
+    --bg: #04050a; --text: #f2f2f7; --dim: rgba(242,242,247,.68); --faint: rgba(242,242,247,.42);
+    --line: rgba(242,242,247,.12); --glass: rgba(20,22,32,.72); --hope: #8fe3b0; --wonder: #b49cff;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); overflow: hidden;
+    font: 16px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Helvetica Neue", sans-serif; -webkit-font-smoothing: antialiased; }
+  canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; touch-action: none; cursor: grab; }
+  canvas.dragging { cursor: grabbing; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  .top { position: fixed; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between;
+    padding: calc(14px + env(safe-area-inset-top)) 16px 10px; pointer-events: none; z-index: 3; }
+  .top > * { pointer-events: auto; }
+  .back { color: var(--dim); text-decoration: none; font-size: 15px; }
+  .badge { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); text-align: center; }
+  .badge b { display: block; font-weight: 500; color: var(--dim); letter-spacing: .02em; text-transform: none; font-size: 13px; margin-top: 2px; }
+  .count { color: var(--faint); font-size: 13px; min-width: 60px; text-align: right; }
+  .bottom { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; gap: 10px;
+    padding: 12px 16px calc(18px + env(safe-area-inset-bottom)); z-index: 3; pointer-events: none; }
+  .bottom > * { pointer-events: auto; }
+  .pill { border: 1px solid rgba(242,242,247,.3); background: rgba(10,11,18,.6); border-radius: 999px; padding: 12px 18px;
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); font-size: 15px; }
+  .pill.primary { background: var(--text); color: #0a0b12; border-color: var(--text); font-weight: 600; }
+  .pill:disabled { opacity: .45; cursor: default; }
+  .sheet { position: fixed; left: 50%; bottom: 0; transform: translate(-50%, 110%); width: min(560px, 100vw);
+    background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(1.2); backdrop-filter: blur(24px) saturate(1.2);
+    border: 1px solid var(--line); border-bottom: 0; border-radius: 22px 22px 0 0; padding: 20px 20px calc(22px + env(safe-area-inset-bottom));
+    transition: transform .35s ease; z-index: 5; max-height: 86vh; overflow-y: auto; }
+  .sheet.on { transform: translate(-50%, 0); }
+  .sheet h2 { font: 500 19px/1.3 -apple-system, "SF Pro Display", "Inter", sans-serif; margin-bottom: 6px; }
+  .sheet p { color: var(--dim); font-size: 15px; }
+  .sheet .fine { color: var(--faint); font-size: 13px; margin-top: 10px; }
+  .close { position: absolute; top: 12px; right: 14px; border: 0; background: none; color: var(--faint); font-size: 22px; line-height: 1; padding: 6px; }
+  .mood { display: flex; align-items: center; gap: 8px; color: var(--dim); font-size: 14px; margin-bottom: 10px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .words { font: 400 22px/1.35 -apple-system, "SF Pro Display", "Inter", sans-serif; letter-spacing: -.01em; margin: 4px 0 8px; white-space: pre-wrap; }
+  .when { color: var(--faint); font-size: 13px; }
+  .moods { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+  .moods button { border: 1px solid var(--line); background: rgba(242,242,247,.04); border-radius: 999px; padding: 7px 12px; font-size: 14px; display: flex; gap: 7px; align-items: center; }
+  .moods button[aria-pressed="true"] { border-color: rgba(242,242,247,.6); background: rgba(242,242,247,.1); }
+  .speck { position: relative; margin-top: 8px; }
+  .speck textarea { width: 100%; min-height: 64px; resize: none; border-radius: 14px; border: 1px solid var(--line); background: rgba(242,242,247,.05);
+    color: var(--text); padding: 12px 14px 22px; font: 17px/1.35 -apple-system, "SF Pro Text", "Inter", sans-serif; outline: none; }
+  .speck textarea:focus { border-color: rgba(180,156,255,.6); }
+  .speck .left { position: absolute; right: 12px; bottom: 8px; font-size: 12px; color: var(--faint); }
+  .add { margin-top: 10px; border: 0; background: none; color: var(--wonder); font-size: 15px; padding: 4px 0; }
+  .actions { display: flex; gap: 10px; margin-top: 16px; }
+  .actions .pill { flex: 1; text-align: center; }
+  .error { color: #ff9cc8; font-size: 14px; margin-top: 10px; min-height: 20px; }
+  .care a { display: block; padding: 12px 14px; border-radius: 14px; background: rgba(242,242,247,.06); color: var(--text); text-decoration: none; margin-top: 8px; }
+  .care a span { display: block; color: var(--faint); font-size: 13px; }
+  .toast { position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 4;
+    background: var(--glass); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); border: 1px solid var(--line);
+    border-radius: 999px; padding: 10px 14px 10px 18px; display: none; align-items: center; gap: 12px; font-size: 14px; white-space: nowrap; }
+  .toast.on { display: flex; }
+  .toast button { border: 0; background: rgba(242,242,247,.12); border-radius: 999px; padding: 6px 12px; font-size: 13px; }
+  .hint { position: fixed; left: 0; right: 0; top: 46%; text-align: center; color: var(--faint); font-size: 14px; pointer-events: none; transition: opacity 1s; z-index: 2; }
+  @media (prefers-reduced-motion: reduce) { .sheet { transition: none; } }
+</style>
+</head>
+<body>
+<canvas id="sky" aria-label="The Sky. Drag to look around; tap a star to read it."></canvas>
+<div class="top">
+  <a class="back" href="./">← Speck</a>
+  <div class="badge" id="badge">Rehearsal Sky<b>Live with everyone</b></div>
+  <div class="count" id="count"></div>
+</div>
+<div class="hint" id="hint">Drag to look around · tap a star to read it</div>
+<div class="bottom">
+  <button class="pill" id="wander" type="button">Show me a thought</button>
+  <button class="pill primary" id="write" type="button">Release a demo thought</button>
+</div>
+<div class="toast" id="toast" role="status"><span id="toastText"></span><button id="toastAction" type="button" hidden></button></div>
+
+<section class="sheet" id="reader" aria-live="polite">
+  <button class="close" data-close type="button" aria-label="Close">×</button>
+  <div class="mood"><span class="dot" id="readerDot"></span><span id="readerMood"></span></div>
+  <div class="words" id="readerWords"></div>
+  <div class="when" id="readerWhen"></div>
+</section>
+
+<section class="sheet" id="composer">
+  <button class="close" data-close type="button" aria-label="Close">×</button>
+  <h2>Release a demo thought</h2>
+  <p>It appears in the Rehearsal Sky for everyone, on the web and on iPhone. Demo thoughts disappear at the Great Reset and never enter the permanent Sky.</p>
+  <div class="moods" id="moods"></div>
+  <div id="specks"></div>
+  <button class="add" id="addSpeck" type="button">+ Add another speck</button>
+  <div class="error" id="composeError" role="alert"></div>
+  <div class="actions"><button class="pill primary" id="release" type="button">Release</button></div>
+  <p class="fine" id="wallet">Demo specks are free in the Rehearsal Sky. Each blank speck holds up to 100 characters; a longer thought uses more, up to 8.</p>
+</section>
+
+<section class="sheet care" id="care">
+  <button class="close" data-close type="button" aria-label="Close">×</button>
+  <h2>You don't have to carry this alone.</h2>
+  <p>It sounds like things are heavy right now. If you're thinking about hurting yourself, you can talk to someone right now. It's free, confidential, and open all the time.</p>
+  <a href="tel:988">Call 988<span>Suicide &amp; Crisis Lifeline (US)</span></a>
+  <a href="sms:988">Text 988<span>Talk by text instead</span></a>
+  <a href="https://findahelpline.com" target="_blank" rel="noopener">Find a helpline<span>Outside the US</span></a>
+  <div class="actions"><button class="pill" id="careRelease" type="button">Release my thought</button></div>
+</section>
+
+<script>
+// ---- Early Access: same gate as the homepage -------------------------------
+const GATE_HASH = "29277112f23034a3528f01484782ecd47c39b307afbeb4c2dfc47d3f516ca125";
+try { if (localStorage.getItem("speck.gate") !== GATE_HASH) location.replace("./"); } catch { location.replace("./"); }
+
+// ---- Which Sky -------------------------------------------------------------
+// Before Genesis this is the Rehearsal Sky (the demo project the TestFlight app uses), so
+// web and iPhone visitors share one live Sky. At Genesis it becomes the permanent Sky.
+const GENESIS = new Date(Date.UTC(2027, 0, 1, 5, 0, 0)); // midnight in New York
+const REHEARSAL = { url: "https://powfrhbkwcabmgzrdzgt.supabase.co", key: "sb_publishable_qhbPYj0wYAuuQeehMPnm2A_z2anjb-p" };
+const PERMANENT = { url: "https://wnoafyupzukojnjjyjrw.supabase.co", key: "sb_publishable_BJwqtYCZZXRpPbIzd7yZrQ_weu8HrOw" };
+const rehearsal = Date.now() < GENESIS.getTime();
+const SKY = rehearsal ? REHEARSAL : PERMANENT;
+const DEMO_PACK = "app.speck.ios.credits10"; // free demo pack (Rehearsal Sky only, at 0 specks)
+const SESSION_KEY = rehearsal ? "speck.demo.session" : "speck.session";
+
+const MOODS = [
+  { name: "Unspoken", rgb: [242,242,247] }, { name: "Melancholy", rgb: [127,168,255] }, { name: "Wonder", rgb: [180,156,255] },
+  { name: "Love", rgb: [255,156,200] }, { name: "Hope", rgb: [143,227,176] }, { name: "Joy", rgb: [255,201,122] },
+];
+const css = ([r, g, b], a = 1) => `rgba(${r},${g},${b},${a})`;
+const $ = (id) => document.getElementById(id);
+
+// ---- Placement: identical to the iPhone app (SkyModel.placement / starDirections) ----
+function uuidBytes(id) { const h = id.replace(/-/g, ""); const b = []; for (let i = 0; i < 32; i += 2) b.push(parseInt(h.slice(i, i + 2), 16)); return b; }
+const unit = (a, b) => ((a << 8) | b) / 65535;
+const dirOf = (yaw, el) => [Math.cos(el) * Math.sin(yaw), Math.sin(el), -Math.cos(el) * Math.cos(yaw)];
+function tonightYaw(day) { let h = 2166136261; for (const ch of day) { h = Math.imul(h ^ ch.codePointAt(0), 16777619) >>> 0; } return (h % 3600) / 3600 * 2 * Math.PI; }
+function placement(row) {
+  const u = uuidBytes(row.i);
+  const p = { yaw: unit(u[0], u[1]) * 2 * Math.PI, el: Math.asin(unit(u[2], u[3]) * 2 - 1), tilt: unit(u[4], u[5]) * 2 * Math.PI, seed: unit(u[6], u[7]) };
+  if (row.a != null && row.d != null) {
+    p.yaw = row.a * Math.PI / 180 + (unit(u[0], u[1]) - 0.5) * 0.08;
+    p.el = Math.min(Math.max(row.d * Math.PI / 180 + (unit(u[2], u[3]) - 0.5) * 0.08, -1.5), 1.5);
+  } else if (row.q) {
+    p.yaw = tonightYaw(row.q) + (unit(u[0], u[1]) - 0.5) * 0.6;
+    p.el = (unit(u[2], u[3]) - 0.5) * 0.4;
+  }
+  return p;
+}
+const SPAN = 0.09;
+function starDirections(row, p) {
+  const n = Math.max(row.n || 1, 1);
+  const shape = Array.isArray(row.p) && row.p.length === n ? row.p : null;
+  const c = dirOf(p.yaw, p.el), e = [Math.cos(p.yaw), 0, Math.sin(p.yaw)];
+  const north = [e[1] * c[2] - e[2] * c[1], e[2] * c[0] - e[0] * c[2], e[0] * c[1] - e[1] * c[0]];
+  const out = [];
+  for (let k = 0; k < n; k++) {
+    let ox, oy;
+    if (shape) { ox = (shape[k][0] - 0.5) * SPAN; oy = -(shape[k][1] - 0.5) * SPAN; }
+    else { const s = k * 0.02; ox = s * Math.cos(p.tilt); oy = s * Math.sin(p.tilt); }
+    const v = [c[0] + e[0] * ox + north[0] * oy, c[1] + e[1] * ox + north[1] * oy, c[2] + e[2] * ox + north[2] * oy];
+    const l = Math.hypot(...v); out.push([v[0] / l, v[1] / l, v[2] / l]);
+  }
+  return out;
+}
+
+// ---- The live Sky: the same cached files the app reads -----------------------
+const thoughts = new Map(); // id -> { row, place, dirs, local? }
+function upsert(row, extra = {}) {
+  const prev = thoughts.get(row.i);
+  const place = prev?.place || placement(row);
+  thoughts.set(row.i, { ...prev, row, place, dirs: starDirections(row, place), ...extra });
+}
+async function loadFile(file) {
+  try {
+    const r = await fetch(`${SKY.url}/storage/v1/object/public/sky/${file}?t=${Math.floor(Date.now() / 10000)}`);
+    if (!r.ok) return;
+    const { rows } = await r.json();
+    for (const row of rows || []) upsert(row);
+    $("count").textContent = thoughts.size ? `${thoughts.size.toLocaleString("en-US")} ${thoughts.size === 1 ? "thought" : "thoughts"}` : "";
+  } catch {}
+}
+loadFile("window.json").then(() => { if (!pointed) faceNewest(); });
+setInterval(() => loadFile("recent.json"), 15000);
+setInterval(() => loadFile("window.json"), 60000);
+
+// ---- Camera, drawing -----------------------------------------------------
+const canvas = $("sky"), ctx = canvas.getContext("2d");
+let W = 0, H = 0, DPR = 1, yaw = 0, pitch = 0.1, vyaw = 0, vpitch = 0, F = 600, pointed = false;
+let fly = null; // { from:[y,p], to:[y,p], t0, dur }
+function resize() {
+  DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight;
+  canvas.width = W * DPR; canvas.height = H * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  F = (Math.min(W, H) * 0.5) / Math.tan(0.62);
+}
+addEventListener("resize", resize); resize();
+function basis() {
+  const f = dirOf(yaw, pitch), r = [Math.cos(yaw), 0, Math.sin(yaw)];
+  const u = [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]];
+  return { f, r, u };
+}
+function project(d, b) {
+  const z = d[0] * b.f[0] + d[1] * b.f[1] + d[2] * b.f[2];
+  if (z < 0.08) return null;
+  const x = d[0] * b.r[0] + d[1] * b.r[1] + d[2] * b.r[2], y = d[0] * b.u[0] + d[1] * b.u[1] + d[2] * b.u[2];
+  return [W / 2 + (x / z) * F, H / 2 - (y / z) * F];
+}
+// Faint background dust so the Sky reads as a place even where no one has written yet.
+const dust = Array.from({ length: 1600 }, () => { const y = Math.random() * 2 * Math.PI, e = Math.asin(Math.random() * 2 - 1); return [dirOf(y, e), Math.random()]; });
+let openId = null;
+function frame(now) {
+  if (fly) {
+    const k = Math.min(1, (now - fly.t0) / fly.dur), s = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+    let dy = fly.to[0] - fly.from[0]; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+    yaw = fly.from[0] + dy * s; pitch = fly.from[1] + (fly.to[1] - fly.from[1]) * s;
+    if (k >= 1) fly = null;
+  } else if (!drag) {
+    yaw += vyaw; pitch += vpitch; vyaw *= 0.94; vpitch *= 0.94;
+  }
+  pitch = Math.max(-1.5, Math.min(1.5, pitch));
+  ctx.fillStyle = "#04050a"; ctx.fillRect(0, 0, W, H);
+  const b = basis();
+  for (const [d, a] of dust) { const p = project(d, b); if (p) { ctx.fillStyle = `rgba(242,242,247,${0.12 + a * 0.3})`; const z = a > 0.92 ? 1.6 : 1; ctx.fillRect(p[0], p[1], z, z); } }
+  const t = now / 1000, nowS = Date.now() / 1000;
+  screen.length = 0;
+  for (const [id, th] of thoughts) {
+    const { row, place } = th, mood = MOODS[row.m] || MOODS[0];
+    const ageH = Math.max(0, nowS - row.t) / 3600;
+    const forming = row.s && row.s > nowS, sealed = row.o && row.o > nowS;
+    let a = Math.max(0.6, 1 - Math.log10(1 + ageH) / 4) * (sealed ? 0.5 : 1);
+    if (forming) a *= 0.55 + 0.45 * Math.sin(t * 3 + place.seed * 6);
+    const lit = id === openId;
+    const size = (3.2 * (1 + 0.7 * Math.min(row.g || 0, 1))) * (lit ? 1.5 : 1);
+    let prev = null;
+    for (const d of th.dirs) {
+      const p = project(d, b); if (!p) { prev = null; continue; }
+      if (prev && (row.n || 1) > 1) { ctx.strokeStyle = css(mood.rgb, lit ? 0.5 : 0.16); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(prev[0], prev[1]); ctx.lineTo(p[0], p[1]); ctx.stroke(); }
+      const g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], size * 5);
+      g.addColorStop(0, css(mood.rgb, a)); g.addColorStop(0.25, css(mood.rgb, a * 0.35)); g.addColorStop(1, css(mood.rgb, 0));
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p[0], p[1], size * 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = `rgba(255,255,255,${Math.min(1, a + 0.15)})`; ctx.beginPath(); ctx.arc(p[0], p[1], size * 0.45, 0, Math.PI * 2); ctx.fill();
+      screen.push([p[0], p[1], id]); prev = p;
+    }
+  }
+  requestAnimationFrame(frame);
+}
+const screen = [];
+requestAnimationFrame(frame);
+function flyTo(place) { fly = { from: [yaw, pitch], to: [place.yaw, Math.max(-1.4, Math.min(1.4, place.el))], t0: performance.now(), dur: 900 }; pointed = true; }
+function faceNewest() {
+  let best = null; for (const th of thoughts.values()) if (!best || th.row.t > best.row.t) best = th;
+  if (best) { yaw = best.place.yaw + 0.25; pitch = best.place.el; flyTo(best.place); }
+}
+
+// ---- Look around (drag) and read (tap / click) ------------------------------
+let drag = null;
+canvas.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: false }; fly = null; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 6) { drag.moved = true; canvas.classList.add("dragging"); $("hint").style.opacity = 0; }
+  yaw -= dx / F; pitch += dy / F; vyaw = -dx / F; vpitch = dy / F; drag.x = e.clientX; drag.y = e.clientY;
+});
+canvas.addEventListener("pointerup", (e) => {
+  canvas.classList.remove("dragging");
+  if (drag && !drag.moved) {
+    let best = null, bd = 30;
+    for (const [x, y, id] of screen) { const d = Math.hypot(x - e.clientX, y - e.clientY); if (d < bd) { bd = d; best = id; } }
+    best ? openThought(best) : closeSheets();
+  }
+  drag = null;
+});
+canvas.addEventListener("wheel", (e) => { yaw += e.deltaX / F; pitch -= e.deltaY / F; e.preventDefault(); }, { passive: false });
+
+// ---- Server calls (anonymous accounts, like the app) ------------------------
+// ---- Invisible bot check (Cloudflare Turnstile widget "Speck", getspeck.app only) ----
+// Supabase verifies the token once captcha is switched on there; until then it's ignored.
+const TURNSTILE_SITE_KEY = "0x4AAAAAAGCpNI5eigKQ4hYk";
+function captchaToken() {
+  return new Promise((resolve) => {
+    const done = (t) => { clearTimeout(timer); resolve(t || null); };
+    const timer = setTimeout(() => done(null), 15000);
+    const run = () => {
+      try {
+        const box = document.createElement("div"); box.style.display = "none"; document.body.appendChild(box);
+        window.turnstile.render(box, { sitekey: TURNSTILE_SITE_KEY, callback: done, "error-callback": () => done(null) });
+      } catch { done(null); }
+    };
+    if (window.turnstile) return run();
+    const s = document.createElement("script");
+    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    s.onload = run; s.onerror = () => done(null); document.head.appendChild(s);
+  });
+}
+const store = {
+  get() { try { return JSON.parse(localStorage.getItem(SESSION_KEY)); } catch { return null; } },
+  set(v) { try { v ? localStorage.setItem(SESSION_KEY, JSON.stringify(v)) : localStorage.removeItem(SESSION_KEY); } catch {} },
+};
+async function auth(path, body) {
+  const r = await fetch(`${SKY.url}/auth/v1/${path}`, { method: "POST", headers: { apikey: SKY.key, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if (!r.ok) throw new Error("auth_" + r.status);
+  const j = await r.json();
+  const s = { access: j.access_token, refresh: j.refresh_token, expires: Date.now() + (j.expires_in - 60) * 1000, user: j.user?.id };
+  store.set(s); return s;
+}
+async function session(create) {
+  let s = store.get();
+  if (s?.refresh && Date.now() > s.expires) { try { s = await auth("token?grant_type=refresh_token", { refresh_token: s.refresh }); } catch { s = null; store.set(null); } }
+  if (!s && create) {
+    const token = await captchaToken();
+    s = await auth("signup", token ? { data: {}, gotrue_meta_security: { captcha_token: token } } : { data: {} }); // anonymous account
+  }
+  return s;
+}
+async function rpc(name, params = {}, withAccount = false) {
+  const s = withAccount ? await session(true) : null;
+  const headers = { apikey: SKY.key, "Content-Type": "application/json" };
+  if (s) headers.Authorization = `Bearer ${s.access}`;
+  const r = await fetch(`${SKY.url}/rest/v1/rpc/${name}`, { method: "POST", headers, body: JSON.stringify(params) });
+  const text = await r.text(); let j = null; try { j = JSON.parse(text); } catch {}
+  if (!r.ok) throw new Error((j && (j.message || j.error)) || "http_" + r.status);
+  return j;
+}
+
+// ---- Reading -----------------------------------------------------------------
+const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+function when(t) {
+  const d = new Date(t * 1000), age = Date.now() / 1000 - t, h = d.getHours();
+  if (age < 600) return "Just now";
+  const part = h < 5 ? "late night" : h < 9 ? "early morning" : h < 12 ? "morning" : h < 17 ? "afternoon" : h < 21 ? "evening" : "night";
+  return `${DAYS[d.getDay()]} · ${part}`;
+}
+async function openThought(id) {
+  const th = thoughts.get(id); if (!th) return;
+  openId = id; flyTo(th.place);
+  const mood = MOODS[th.row.m] || MOODS[0];
+  $("readerDot").style.background = css(mood.rgb); $("readerMood").textContent = mood.name;
+  $("readerWhen").textContent = when(th.row.t);
+  const nowS = Date.now() / 1000;
+  $("readerWords").textContent = th.row.o && th.row.o > nowS ? "Sealed until " + new Date(th.row.o * 1000).toLocaleDateString() + "."
+    : th.row.s && th.row.s > nowS && !th.local ? "Still forming…" : th.text || "…";
+  show("reader");
+  if (th.text || (th.row.o && th.row.o > nowS)) return;
+  try {
+    const r = await rpc("get_inscription", { p_id: id });
+    const row = Array.isArray(r) ? r[0] : r;
+    if (row?.specks?.length) { th.text = row.specks.join(" "); if (openId === id) $("readerWords").textContent = th.text; }
+  } catch { if (openId === id) $("readerWords").textContent = "This thought couldn't be opened."; }
+}
+$("wander").addEventListener("click", () => {
+  const all = [...thoughts.keys()]; if (!all.length) return;
+  openThought(all[Math.floor(Math.random() * all.length)]);
+});
+
+// ---- Sheets ------------------------------------------------------------------
+function show(id) { for (const s of document.querySelectorAll(".sheet")) s.classList.toggle("on", s.id === id); }
+function closeSheets() { for (const s of document.querySelectorAll(".sheet")) s.classList.remove("on"); openId = null; }
+document.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", closeSheets));
+
+// ---- Writing -----------------------------------------------------------------
+let mood = 0, careShown = false;
+const moodBox = $("moods");
+MOODS.forEach((m, i) => {
+  const b = document.createElement("button"); b.type = "button"; b.setAttribute("aria-pressed", i === 0);
+  b.innerHTML = `<span class="dot" style="background:${css(m.rgb)}"></span>${m.name}`;
+  b.addEventListener("click", () => { mood = i; moodBox.querySelectorAll("button").forEach((x, j) => x.setAttribute("aria-pressed", j === i)); });
+  moodBox.appendChild(b);
+});
+function addSpeck(value = "") {
+  const box = $("specks"); if (box.children.length >= 8) return;
+  const wrap = document.createElement("div"); wrap.className = "speck";
+  wrap.innerHTML = `<textarea maxlength="100" rows="2" placeholder="${box.children.length ? "Keep going…" : "What's on your mind?"}" aria-label="Speck ${box.children.length + 1}"></textarea><span class="left">100</span>`;
+  const ta = wrap.querySelector("textarea"), left = wrap.querySelector(".left");
+  ta.value = value; const upd = () => { left.textContent = 100 - ta.value.length; updateRelease(); }; ta.addEventListener("input", upd); upd();
+  box.appendChild(wrap); ta.focus();
+  $("addSpeck").hidden = box.children.length >= 8;
+}
+function filled() { return [...document.querySelectorAll("#specks textarea")].map((t) => t.value.trim()).filter(Boolean); }
+function updateRelease() { const n = filled().length; $("release").textContent = n > 1 ? `Release · ${n} specks` : "Release"; $("release").disabled = !n; }
+$("addSpeck").addEventListener("click", () => addSpeck());
+$("write").addEventListener("click", () => {
+  if (!rehearsal) { toast("Releasing on the web opens with Sign in with Apple soon. For now, release in the Speck app."); return; }
+  if (!$("specks").children.length) addSpeck();
+  $("composeError").textContent = ""; updateRelease(); show("composer");
+});
+
+// The same checks the app makes before sending; the server screens everything again.
+function problem(text) {
+  const l = text.toLowerCase();
+  if (/[\w.+-]+@[\w-]+\.[a-z]{2,}/.test(l) || /(\d[\s\-.()]?){9,}/.test(l)) return "Leave out phone numbers and email addresses. The Sky is anonymous.";
+  if (/(https?:\/\/|www\.)|\b[a-z0-9-]+\.(com|net|org|io|co|me|app|gg|ly|xyz|tv|link|info|biz|site|online)\b/.test(l)) return "Leave out links and websites. The Sky is anonymous.";
+  if (/(^|\s)@[a-z0-9_.]{2,}/.test(l)) return "Leave out usernames and handles. The Sky is anonymous.";
+  if (/\b(kill yourself|kys|go die)\b/.test(l)) return "The Sky can't carry words meant to hurt someone.";
+  return null;
+}
+const CARE = ["kill myself","killing myself","end my life","ending my life","suicide","suicidal","want to die","wanna die","don't want to be alive","dont want to be alive","don't want to live","dont want to live","hurt myself","hurting myself","self harm","self-harm","cut myself","cutting myself","no reason to live","better off without me","take my own life","end it all","not be here anymore"];
+function message(code) {
+  const m = {
+    personal_info: "Leave out phone numbers and email addresses. The Sky is anonymous.",
+    rate_limited: "You've released a lot just now. Try again in a few minutes.",
+    account_restricted: "Releasing is paused for this account.",
+    invalid_specks: "Each speck holds 1 to 100 characters.",
+    not_allowed_threat: "The Sky can't carry threats toward anyone. If you're angry, write about the feeling, not the person.",
+    not_allowed_harassment: "The Sky can't carry words meant to hurt someone.",
+    not_allowed_hate: "The Sky doesn't carry slurs or hate toward people.",
+    not_allowed_links: "Leave out links and websites. The Sky is anonymous.",
+    not_allowed_handles: "Leave out usernames and handles. The Sky is anonymous.",
+    not_allowed_spam: "That looks like spam.",
+  };
+  return m[code] || (code.startsWith("not_allowed") ? "This can't be released into the Sky." : "Something went wrong. Try again.");
+}
+$("release").addEventListener("click", () => {
+  const specks = filled(); if (!specks.length) return;
+  for (const s of specks) { const p = problem(s); if (p) { $("composeError").textContent = p; return; } }
+  if (!careShown && specks.some((s) => CARE.some((c) => s.toLowerCase().includes(c)))) { careShown = true; show("care"); return; }
+  release(specks);
+});
+$("careRelease").addEventListener("click", () => { show("composer"); release(filled()); });
+
+async function release(specks) {
+  const btn = $("release"); btn.disabled = true; btn.textContent = "Releasing…"; $("composeError").textContent = "";
+  try {
+    let res;
+    try { res = await rpc("release_inscription", { p_specks: specks, p_mood: mood }, true); }
+    catch (e) {
+      if (e.message !== "insufficient_credits") throw e;
+      await rpc("beta_claim_pack", { p_product_id: DEMO_PACK }, true); // free demo specks
+      res = await rpc("release_inscription", { p_specks: specks, p_mood: mood }, true);
+    }
+    const id = res.id, nowS = Date.now() / 1000;
+    upsert({ i: id, m: mood, n: specks.length, t: nowS, s: nowS + 60, g: 0 }, { text: specks.join(" "), local: true });
+    document.querySelectorAll("#specks .speck").forEach((s) => s.remove()); careShown = false;
+    closeSheets(); flyTo(thoughts.get(id).place); openId = id;
+    $("wallet").textContent = `You have ${res.balance} demo ${res.balance === 1 ? "speck" : "specks"} left. Demo specks are free in the Rehearsal Sky.`;
+    reclaimToast(id, nowS + 60);
+  } catch (e) {
+    $("composeError").textContent = message(e.message || "");
+  } finally { btn.disabled = false; updateRelease(); }
+}
+
+// ---- The 60-second reclaim -----------------------------------------------------
+let toastTimer = null;
+function toast(text, action, onAction, ms = 4000) {
+  clearInterval(toastTimer); $("toastText").textContent = text;
+  const a = $("toastAction"); a.hidden = !action; a.textContent = action || ""; a.onclick = onAction || null;
+  $("toast").classList.add("on"); if (ms) toastTimer = setTimeout(() => $("toast").classList.remove("on"), ms);
+}
+function reclaimToast(id, until) {
+  const tick = () => {
+    const left = Math.ceil(until - Date.now() / 1000);
+    if (left <= 0) { clearInterval(toastTimer); toast("Settled into the Rehearsal Sky.", null, null, 3000); return; }
+    $("toastText").textContent = `Released · Reclaim 0:${String(left).padStart(2, "0")}`;
+  };
+  toast("", "Reclaim", async () => {
+    try { await rpc("withdraw_inscription", { p_id: id }, true); thoughts.delete(id); openId = null; toast("Reclaimed. Your specks are back.", null, null, 3000); }
+    catch { toast("It has already settled into the Sky.", null, null, 3000); }
+  }, 0);
+  tick(); toastTimer = setInterval(tick, 1000);
+}
+
+// ---- After Genesis -------------------------------------------------------------
+if (!rehearsal) {
+  $("badge").innerHTML = "The Sky<b>Live with everyone</b>";
+  $("write").textContent = "Release a thought";
+}
+setTimeout(() => { $("hint").style.opacity = 0; }, 6000);
+</script>
+</body>
+</html>
