@@ -54,7 +54,11 @@
   .count span { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--faint); }
   .hero h1 { font: 400 clamp(22px, 4.6vw, 30px)/1.25 -apple-system, "SF Pro Display", "Inter", sans-serif; letter-spacing: -0.015em; }
   .hero p { margin-top: 10px; color: var(--dim); }
-  .cue { margin-top: 56px; font-size: 13px; color: var(--faint); letter-spacing: .02em; }
+  .demo { display: inline-block; margin-top: 26px; padding: 13px 24px; border-radius: 999px; border: 1px solid rgba(242,242,247,.4);
+    background: rgba(10,11,18,.45); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); color: var(--text);
+    text-decoration: none; font: 500 16px/1 -apple-system, "SF Pro Text", "Inter", sans-serif; transition: border-color .2s, box-shadow .3s; }
+  .demo:hover { border-color: rgba(242,242,247,.8); box-shadow: 0 0 40px rgba(180,156,255,.3); }
+  .cue { margin-top: 40px; font-size: 13px; color: var(--faint); letter-spacing: .02em; }
   .cue::after { content: ""; display: block; width: 1px; height: 36px; margin: 14px auto 0; background: linear-gradient(var(--faint), transparent); animation: drip 2.4s ease-in-out infinite; }
   @keyframes drip { 0%,100% { opacity: .25; transform: scaleY(.6); transform-origin: top; } 50% { opacity: 1; transform: none; } }
 
@@ -202,6 +206,7 @@
       </div>
       <h1>Because words are enough.</h1>
       <p id="headline">A shared sky of thoughts, written by everyone. The permanent Sky begins January 1, 2027 · 12:00 a.m. EST.</p>
+      <a class="demo" href="sky.html">Demo the Sky</a>
       <div class="cue" id="cue">Touch a star to read its contents</div>
     </div>
   </section>
@@ -224,7 +229,7 @@
         <li class="now">
           <time>Now</time>
           <h3>Explore the Sky</h3>
-          <p>Explore the Sky before Genesis. Look around, discover sample thoughts, and get a feel for the universe. The Rehearsal Sky is temporary. Its contents disappear at the Great Reset and never enter the permanent Sky.</p>
+          <p>Explore the Sky before Genesis. Release a demo thought, choose its color, and discover what others have left behind, on the web and on iPhone, live. The Rehearsal Sky is temporary. Demo thoughts disappear at the Great Reset and never enter the permanent Sky. <a href="sky.html" style="color:var(--text)">Demo the Sky</a></p>
         </li>
         <li>
           <time>December 31, 2026 · 11:59 p.m. EST</time>
@@ -376,6 +381,26 @@ const SUPABASE_URL = "https://wnoafyupzukojnjjyjrw.supabase.co";
 const SUPABASE_KEY = "sb_publishable_BJwqtYCZZXRpPbIzd7yZrQ_weu8HrOw";
 const APPLE_SERVICES_ID = "app.speck.web"; // Sign in with Apple for the website
 
+// ---- Invisible bot check (Cloudflare Turnstile widget "Speck", getspeck.app only) ----
+// Supabase verifies the token once captcha is switched on there; until then it's ignored.
+const TURNSTILE_SITE_KEY = "0x4AAAAAAGCpNI5eigKQ4hYk";
+function captchaToken() {
+  return new Promise((resolve) => {
+    const done = (t) => { clearTimeout(timer); resolve(t || null); };
+    const timer = setTimeout(() => done(null), 15000);
+    const run = () => {
+      try {
+        const box = document.createElement("div"); box.style.display = "none"; document.body.appendChild(box);
+        window.turnstile.render(box, { sitekey: TURNSTILE_SITE_KEY, callback: done, "error-callback": () => done(null) });
+      } catch { done(null); }
+    };
+    if (window.turnstile) return run();
+    const s = document.createElement("script");
+    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    s.onload = run; s.onerror = () => done(null); document.head.appendChild(s);
+  });
+}
+
 // ---- Waiting list (Sign in with Apple) -------------------------------------
 // The Apple ID token is exchanged for a production Speck session; the same Apple ID signs
 // in to the same account in the app. The session is kept in this browser only so the page
@@ -446,7 +471,9 @@ document.getElementById("appleButton").addEventListener("click", async (e) => {
   button.disabled = true;
   try {
     const res = await signingIn;
-    const session = await auth("id_token", { provider: "apple", id_token: res.authorization.id_token, nonce });
+    const token = await captchaToken();
+    const session = await auth("id_token", { provider: "apple", id_token: res.authorization.id_token, nonce,
+      ...(token ? { gotrue_meta_security: { captcha_token: token } } : {}) });
     account = session; store.set(session);
     showPlace(await rpc("join_waiting_list", session));
   } catch (err) {
