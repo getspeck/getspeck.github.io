@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://appleid.cdn-apple.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://appleid.cdn-apple.com; img-src 'self' data: blob: https://appleid.cdn-apple.com; font-src 'self' data:; connect-src 'self' https://powfrhbkwcabmgzrdzgt.supabase.co https://wnoafyupzukojnjjyjrw.supabase.co https://appleid.apple.com https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com https://appleid.apple.com; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>The Sky · Speck</title>
 <meta name="description" content="Explore the Sky live, with everyone. Release a demo thought before Genesis.">
@@ -1063,6 +1064,7 @@ const CARE = ["kill myself","killing myself","end my life","ending my life","sui
 function message(code) {
   const m = {
     personal_info: "Leave out phone numbers and email addresses. The Sky is anonymous.",
+    demo_limit: "You've used all your free demo specks. Get Speck on iPhone to keep writing.",
     rate_limited: "You've released a lot just now. Try again in a few minutes.",
     account_restricted: "Releasing is paused for this account.",
     invalid_specks: "Each speck holds 1 to 100 characters.",
