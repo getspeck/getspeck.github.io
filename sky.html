@@ -72,7 +72,7 @@
     opacity: 0; transform: translateY(6px); transition: opacity .5s ease, transform .5s ease; white-space: pre-wrap;
     text-shadow: 0 0 24px rgba(4,5,10,.95), 0 0 6px rgba(4,5,10,.95); }
   #thought.on { opacity: 1; transform: none; }
-  #thought small { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; letter-spacing: .02em; color: var(--faint); white-space: normal; }
+  #thought small { display: block; margin-top: 6px; font-size: 12px; letter-spacing: .02em; color: var(--faint); white-space: normal; }
   .hint { position: fixed; left: 0; right: 0; top: 46%; text-align: center; color: var(--faint); font-size: 14px; pointer-events: none; transition: opacity 1s; z-index: 2; }
   @media (prefers-reduced-motion: reduce) { .sheet { transition: none; } }
 </style>
@@ -91,7 +91,7 @@
 </div>
 <div class="toast" id="toast" role="status"><span id="toastText"></span><button id="toastAction" type="button" hidden></button></div>
 
-<div id="thought" aria-live="polite"><span id="readerWords"></span><small><span class="dot" id="readerDot"></span><span id="readerMood"></span> · <span id="readerWhen"></span></small></div>
+<div id="thought" aria-live="polite"><span id="readerWords"></span><small><span id="readerMood"></span> · <span id="readerWhen"></span></small></div>
 
 <section class="sheet" id="composer">
   <button class="close" data-close type="button" aria-label="Close">×</button>
@@ -355,7 +355,7 @@ async function openThought(id) {
   const th = thoughts.get(id); if (!th) return;
   openId = id; flyTo(th.place);
   const mood = MOODS[th.row.m] || MOODS[0];
-  $("readerDot").style.background = css(mood.rgb); $("readerMood").textContent = mood.name;
+  $("readerMood").style.color = css(mood.rgb); $("readerMood").textContent = mood.name;
   $("readerWhen").textContent = when(th.row.t);
   const nowS = Date.now() / 1000;
   $("readerWords").textContent = th.row.o && th.row.o > nowS ? "Sealed until " + new Date(th.row.o * 1000).toLocaleDateString() + "."
