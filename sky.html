@@ -144,6 +144,7 @@
   <div class="error" id="composeError" role="alert"></div>
   <div class="actions"><button class="pill primary" id="release" type="button">Release</button></div>
   <p class="fine" id="wallet">Demo specks are free in the Rehearsal Sky. Each blank speck holds up to 100 characters; a longer thought uses more, up to 8.</p>
+  <p class="fine">Every thought is checked for safety by Speck's moderation, which sends its words (never who you are) to Anthropic's Claude AI. No threats, harassment, hate, sexual content, or personal information: zero tolerance. By releasing you agree to the <a href="terms.html#rules" style="color:inherit">Terms</a> and <a href="privacy.html" style="color:inherit">Privacy Policy</a>.</p>
 </section>
 
 <section class="sheet care" id="care">
@@ -406,6 +407,7 @@ async function loadFile(file) {
     if (!r.ok) return;
     const { rows } = await r.json();
     for (const row of rows || []) {
+      if (typeof blockedThoughts !== "undefined" && blockedThoughts.has(row.i)) continue;
       const known = thoughts.get(row.i);
       if (!known || known.row.s !== row.s || known.row.g !== row.g) upsert(row, { arrival: loaded && !known });
     }
@@ -861,6 +863,7 @@ const ICON = {
   saved: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>',
   bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></svg>',
   share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5M5 13v7h14v-7"/></svg>',
+  block: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/></svg>',
   flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M5 21V4h11l-2 4 2 4H5"/></svg>',
 };
 const savedIds = new Set((() => { try { return JSON.parse(localStorage.getItem("speck.web.saved")) || []; } catch { return []; } })());
@@ -898,6 +901,7 @@ function renderQuick() {
   if (sealed && !th.local) quickEl.append(quickButton(ICON.bell, reminded.has(id) ? "Reminding" : "Remind me", () => remind(id), reminded.has(id) ? color : null));
   if (!th.mock) quickEl.append(quickButton(ICON.share, "Share", () => share(id)));
   if (!th.local) quickEl.append(quickButton(ICON.flag, "Report", () => reportReasons(id)));
+  if (!th.local) quickEl.append(quickButton(ICON.block, "Block", () => blockAuthor(id)));
 }
 async function toggleFelt(id) {
   const th = thoughts.get(id); if (!th) return;
@@ -940,6 +944,26 @@ function remind(id) {
   toast("Added to your calendar. We'll see you when it opens.");
 }
 $("readerRemind").addEventListener("click", (e) => { e.stopPropagation(); if (openId) remind(openId); });
+// Block this author: hides this thought, and everything they release from now on, for you.
+// They stay anonymous; earlier thoughts aren't revealed as theirs.
+const blockedThoughts = new Set();
+async function blockAuthor(id) {
+  hideQuick(); const th = thoughts.get(id);
+  thoughts.delete(id); dataVersion++; if (openId === id || focusId === id) endReading();
+  toast("Blocked. You won't see this author's thoughts.");
+  if (th && !th.mock) {
+    try { await rpc("block_author", { p_id: id }, true); localStorage.setItem("speck.web.hasBlocks", "1"); loadBlocked(); } catch {}
+  }
+}
+async function loadBlocked() {
+  try { if (!localStorage.getItem("speck.web.hasBlocks") || !store.get()) return; } catch { return; }
+  try {
+    const ids = await rpc("my_blocked_thoughts", {}, true);
+    for (const b of ids || []) { blockedThoughts.add(b); if (thoughts.delete(b)) dataVersion++; }
+  } catch {}
+}
+setTimeout(loadBlocked, 2000); setInterval(loadBlocked, 60000);
+
 function reportReasons(id) {
   quickEl.innerHTML = ""; quickEl.classList.add("reasons");
   for (const reason of ["Threat or harassment", "Personal information", "Sexual content", "Hate", "Spam", "Something else"]) {
