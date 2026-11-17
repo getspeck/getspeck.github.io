@@ -18,6 +18,21 @@
     font: 16px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Helvetica Neue", sans-serif; -webkit-font-smoothing: antialiased; }
   canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; touch-action: none; cursor: grab; }
   canvas.dragging { cursor: grabbing; }
+  canvas { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+  .quick { position: fixed; z-index: 6; display: flex; gap: 2px; padding: 6px 8px; border-radius: 999px;
+    background: rgba(28,30,40,.82); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+    border: 1px solid rgba(242,242,247,.14); box-shadow: 0 10px 30px rgba(0,0,0,.45);
+    opacity: 0; transform: scale(.88); transition: opacity .18s ease, transform .22s cubic-bezier(.3,1.4,.5,1); pointer-events: none; }
+  .quick.on { opacity: 1; transform: none; pointer-events: auto; }
+  .quick button { border: 0; background: none; min-width: 56px; padding: 6px 6px 4px; border-radius: 16px; display: flex; flex-direction: column;
+    align-items: center; gap: 3px; color: rgba(242,242,247,.88); font-size: 10.5px; font-weight: 500; }
+  .quick button:hover { background: rgba(242,242,247,.08); }
+  .quick button svg { width: 20px; height: 20px; }
+  .quick.reasons { flex-direction: column; border-radius: 18px; padding: 8px; }
+  .quick.reasons button { flex-direction: row; font-size: 14px; padding: 9px 12px; justify-content: flex-start; min-width: 220px; }
+  #thought .remind { display: none; margin-top: 10px; border: 0; border-radius: 999px; padding: 7px 12px; font-size: 13px;
+    background: rgba(242,242,247,.1); color: var(--text); pointer-events: auto; }
+  #thought .remind.on { display: inline-block; }
   button { font: inherit; color: inherit; cursor: pointer; }
   .top { position: fixed; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between;
     padding: calc(14px + env(safe-area-inset-top)) 16px 10px; pointer-events: none; z-index: 3; }
@@ -115,7 +130,8 @@
 </div>
 <div class="toast" id="toast" role="status"><span id="toastText"></span><button id="toastAction" type="button" hidden></button></div>
 
-<div id="thought" aria-live="polite"><span id="readerWords"></span><small><span id="readerMood"></span> · <span id="readerWhen"></span><span id="readerNo"></span></small><div class="step" id="readerStep"><button id="readerBack" type="button" aria-label="Previous speck">‹</button><span id="readerHint"></span></div></div>
+<div id="thought" aria-live="polite"><span id="readerWords"></span><small><span id="readerMood"></span> · <span id="readerWhen"></span><span id="readerNo"></span></small><div class="step" id="readerStep"><button id="readerBack" type="button" aria-label="Previous speck">‹</button><span id="readerHint"></span></div><button class="remind" id="readerRemind" type="button">🔔 Remind me when it opens</button></div>
+<div class="quick" id="quick" role="menu" aria-label="Actions for this thought"></div>
 
 <section class="sheet" id="composer">
   <button class="close" data-close type="button" aria-label="Close">×</button>
@@ -412,7 +428,8 @@ loadFile("window.json").then(() => {
   loaded = true; updateCount();
   // First visit: drift to a thought that has moved people, and open it.
   let first = true; try { first = !localStorage.getItem("speck.web.intro"); localStorage.setItem("speck.web.intro", "1"); } catch {}
-  if (first) setTimeout(() => { if (!touched) showMeSomething(); }, 1600);
+  if (/open=/.test(location.hash)) { touched = true; setTimeout(openLinked, 600); }
+  else if (first) setTimeout(() => { if (!touched) showMeSomething(); }, 1600);
 });
 setInterval(() => loadFile("recent.json").then(updateCount), 15000);
 setInterval(() => loadFile("window.json").then(updateCount), 60000);
@@ -584,6 +601,12 @@ canvas.addEventListener("pointerdown", (e) => {
     const scrub = e.clientX > W - TIME_EDGE && e.pointerType !== "mouse";
     gesture = { kind: scrub ? "scrub" : "look", sx: e.clientX, sy: e.clientY, x: e.clientX, y: e.clientY, t: performance.now(), vx: 0, vy: 0, moved: false, type: e.pointerType };
     cam.traveling = scrub;
+    hideQuick();
+    // Press and hold a star (touch or pen): its quick actions. The mouse uses right-click.
+    if (!scrub && e.pointerType !== "mouse") {
+      const g = gesture;
+      g.hold = setTimeout(() => { if (gesture === g && !g.moved) { g.held = true; showQuick(g.sx, g.sy); } }, 450);
+    }
   } else if (pointers.size === 2) {
     const g = twoFinger(); cam.zoomEase = null;
     gesture = { kind: "two", cy: g.cy, dist0: g.dist, zoom0: cam.zoom, t: performance.now(), vy: 0, moved: true };
@@ -596,7 +619,7 @@ canvas.addEventListener("pointermove", (e) => {
   const now = performance.now(), dtm = Math.max(now - gesture.t, 1) / 1000;
   if (gesture.kind === "look" || gesture.kind === "scrub") {
     const dx = e.clientX - gesture.x, dy = e.clientY - gesture.y;
-    if (!gesture.moved && Math.hypot(e.clientX - gesture.sx, e.clientY - gesture.sy) > 6) { gesture.moved = true; canvas.classList.add("dragging"); interacted(); }
+    if (!gesture.moved && Math.hypot(e.clientX - gesture.sx, e.clientY - gesture.sy) > 6) { gesture.moved = true; clearTimeout(gesture.hold); canvas.classList.add("dragging"); interacted(); }
     if (!gesture.moved) return;
     gesture.vx = gesture.vx * 0.6 + (dx / dtm) * 0.4; gesture.vy = gesture.vy * 0.6 + (dy / dtm) * 0.4;
     gesture.x = e.clientX; gesture.y = e.clientY; gesture.t = now;
@@ -618,8 +641,11 @@ function pointerEnd(e) {
   if (!pointers.has(e.pointerId)) return;
   pointers.delete(e.pointerId);
   const g = gesture; if (!g) return;
+  clearTimeout(g.hold);
+  if (g.held) { g.moved = true; } // the lift that ends a long press isn't a tap
   const stale = performance.now() - (g.t || 0) > 90; // finger rested before lifting: no fling
-  if (g.kind === "look") {
+  if (g.held) { /* quick actions are open */ }
+  else if (g.kind === "look") {
     if (!g.moved && e.type === "pointerup") {
       const hit = pick(e.clientX, e.clientY, g.type === "mouse" ? 36 : 60);
       interacted();
@@ -633,6 +659,7 @@ function pointerEnd(e) {
   else gesture = { kind: "none", moved: true }; // lift the second finger: wait until all are up
 }
 canvas.addEventListener("pointerup", pointerEnd);
+canvas.addEventListener("contextmenu", (e) => { e.preventDefault(); showQuick(e.clientX, e.clientY); });
 canvas.addEventListener("pointercancel", pointerEnd);
 canvas.addEventListener("wheel", (e) => {
   e.preventDefault(); interacted();
@@ -824,6 +851,122 @@ async function rpc(name, params = {}, withAccount = false) {
 }
 
 
+// ---- Quick actions: press and hold (or right-click) a star --------------------------
+const ICON = {
+  read: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>',
+  felt: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c.6 4.6 2.4 7.4 10 10-7.6 2.6-9.4 5.4-10 10-.6-4.6-2.4-7.4-10-10 7.6-2.6 9.4-5.4 10-10z"/></svg>',
+  feltOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M12 2c.6 4.6 2.4 7.4 10 10-7.6 2.6-9.4 5.4-10 10-.6-4.6-2.4-7.4-10-10 7.6-2.6 9.4-5.4 10-10z"/></svg>',
+  save: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>',
+  saved: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></svg>',
+  share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5M5 13v7h14v-7"/></svg>',
+  flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M5 21V4h11l-2 4 2 4H5"/></svg>',
+};
+const savedIds = new Set((() => { try { return JSON.parse(localStorage.getItem("speck.web.saved")) || []; } catch { return []; } })());
+const reminded = new Set((() => { try { return JSON.parse(localStorage.getItem("speck.web.reminded")) || []; } catch { return []; } })());
+const keep = (key, set) => { try { localStorage.setItem(key, JSON.stringify([...set].slice(-1000))); } catch {} };
+let quickId = null;
+const quickEl = $("quick");
+function hideQuick() { quickId = null; quickEl.classList.remove("on", "reasons"); }
+function placeQuick(x, y) {
+  const w = quickEl.offsetWidth, h = quickEl.offsetHeight, below = y < 150;
+  quickEl.style.left = Math.min(Math.max(12, x - w / 2), W - w - 12) + "px";
+  quickEl.style.top = Math.min(Math.max(12, below ? y + 34 : y - h - 34), H - h - 90) + "px";
+}
+function quickButton(icon, label, onClick, color) {
+  const b = document.createElement("button"); b.type = "button"; b.setAttribute("role", "menuitem");
+  b.innerHTML = `${icon}<span>${label}</span>`; if (color) b.style.color = color;
+  b.addEventListener("click", (e) => { e.stopPropagation(); onClick(); });
+  return b;
+}
+function showQuick(x, y) {
+  const id = pick(x, y, 60), th = id && thoughts.get(id);
+  if (!th) { hideQuick(); return; }
+  quickId = id; births.set(id, clock - 0.6); dataVersion++; interacted();
+  try { navigator.vibrate?.(12); } catch {}
+  renderQuick(); placeQuick(x, y); quickEl.classList.add("on");
+}
+function renderQuick() {
+  const id = quickId, th = thoughts.get(id); if (!th) return hideQuick();
+  const nowS = Date.now() / 1000, sealed = th.row.o > nowS, forming = th.row.s > nowS && !th.local, readable = !sealed && !forming;
+  const color = css((MOODS[th.row.m] || MOODS[0]).rgb);
+  quickEl.classList.remove("reasons"); quickEl.innerHTML = "";
+  quickEl.append(quickButton(ICON.read, "Read", () => { hideQuick(); approach(id); }));
+  if (readable && !th.local) quickEl.append(quickButton(th.felt ? ICON.felt : ICON.feltOff, th.felt ? "Felt" : "Felt this", () => toggleFelt(id), th.felt ? color : null));
+  if (readable) quickEl.append(quickButton(savedIds.has(id) ? ICON.saved : ICON.save, savedIds.has(id) ? "Saved" : "Save", () => toggleSave(id), savedIds.has(id) ? color : null));
+  if (sealed && !th.local) quickEl.append(quickButton(ICON.bell, reminded.has(id) ? "Reminding" : "Remind me", () => remind(id), reminded.has(id) ? color : null));
+  if (!th.mock) quickEl.append(quickButton(ICON.share, "Share", () => share(id)));
+  if (!th.local) quickEl.append(quickButton(ICON.flag, "Report", () => reportReasons(id)));
+}
+async function toggleFelt(id) {
+  const th = thoughts.get(id); if (!th) return;
+  const feeling = !th.felt;
+  th.felt = feeling; th.row.g = clamp((th.row.g || 0) + (feeling ? 0.12 : -0.12), 0, 1); if (feeling) births.set(id, clock);
+  dataVersion++; renderQuick();
+  if (th.mock) return;
+  try {
+    const r = await rpc("toggle_felt", { p_id: id }, true);
+    if (r && typeof r.g === "number") { th.row.g = r.g; dataVersion++; }
+  } catch (e) { th.felt = !feeling; dataVersion++; renderQuick(); toast(message(e.message || "")); }
+}
+function toggleSave(id) {
+  if (savedIds.has(id)) savedIds.delete(id); else { savedIds.add(id); births.set(id, clock); }
+  keep("speck.web.saved", savedIds); dataVersion++; renderQuick();
+}
+const linkFor = (id) => `https://getspeck.app/sky.html#open=${id}`;
+async function share(id) {
+  const th = thoughts.get(id), url = linkFor(id), text = th?.row.no ? `A thought in the Sky · No. ${th.row.no.toLocaleString("en-US")}` : "A thought in the Sky";
+  hideQuick();
+  try { if (navigator.share) { await navigator.share({ title: "Speck", text, url }); return; } } catch { return; }
+  try { await navigator.clipboard.writeText(url); toast("Link copied."); } catch { toast(url, null, null, 8000); }
+}
+// A sealed thought: put its opening on your calendar, with a link straight back to it.
+function remind(id) {
+  const th = thoughts.get(id); if (!th?.row.o) return;
+  const stamp = (d) => new Date(d).toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+  const opens = th.row.o * 1000, url = linkFor(id);
+  const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Speck//Sky//EN", "BEGIN:VEVENT",
+    `UID:${id}@getspeck.app`, `DTSTAMP:${stamp(Date.now())}`, `DTSTART:${stamp(opens)}`, `DTEND:${stamp(opens + 15 * 60000)}`,
+    "SUMMARY:A sealed thought opens in the Sky", `DESCRIPTION:It can be read now: ${url}`, `URL:${url}`,
+    "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:A sealed thought opens in the Sky", "TRIGGER:PT0M", "END:VALARM",
+    "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" })); a.download = "speck-sealed-thought.ics";
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  reminded.add(id); keep("speck.web.reminded", reminded);
+  if (quickId === id) renderQuick();
+  if (openId === id) $("readerRemind").textContent = "🔔 Added to your calendar";
+  toast("Added to your calendar. We'll see you when it opens.");
+}
+$("readerRemind").addEventListener("click", (e) => { e.stopPropagation(); if (openId) remind(openId); });
+function reportReasons(id) {
+  quickEl.innerHTML = ""; quickEl.classList.add("reasons");
+  for (const reason of ["Threat or harassment", "Personal information", "Sexual content", "Hate", "Spam", "Something else"]) {
+    quickEl.append(quickButton("", reason, async () => {
+      hideQuick(); const th = thoughts.get(id);
+      thoughts.delete(id); dataVersion++; if (openId === id || focusId === id) endReading(); // hidden for you right away
+      toast("Thanks. It's hidden while we take a look.");
+      if (th && !th.mock) { try { await rpc("report_inscription", { p_id: id, p_reason: reason }, true); } catch {} }
+    }));
+  }
+}
+
+// ---- Links straight to a thought: getspeck.app/sky.html#open=<id> ----------------------
+async function openLinked() {
+  const m = location.hash.match(/open=([0-9a-f-]{36})/i); if (!m) return;
+  const id = m[1].toLowerCase(); history.replaceState(null, "", location.pathname);
+  if (!thoughts.has(id)) {
+    try {
+      const row = await rpc("get_inscription", { p_id: id });
+      if (!row?.id) { toast("That thought isn't here anymore."); return; }
+      upsert({ i: row.id, m: row.m, n: row.n || row.specks?.length || 1, t: row.t, g: row.g || 0, p: row.p, s: row.s, o: row.o, no: row.no },
+        row.specks ? { specks: row.specks, text: row.specks.join(" ") } : {});
+    } catch { return; }
+  }
+  approach(id, 1.6);
+}
+addEventListener("hashchange", openLinked);
+
 // ---- Find a thought by its number --------------------------------------------------
 $("find").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -860,6 +1003,8 @@ async function openThought(id) {
   $("readerWhen").textContent = when(th.row.t);
   $("readerNo").textContent = th.row.no ? ` · No. ${th.row.no.toLocaleString("en-US")}` : "";
   const nowS = Date.now() / 1000, sealed = th.row.o && th.row.o > nowS;
+  $("readerRemind").classList.toggle("on", !!sealed && !th.local);
+  $("readerRemind").textContent = reminded.has(id) ? "🔔 Added to your calendar" : "🔔 Remind me when it opens";
   $("readerWords").textContent = sealed ? "Sealed until " + new Date(th.row.o * 1000).toLocaleDateString() + "."
     : th.row.s && th.row.s > nowS && !th.local ? "Still forming…" : th.specks ? th.specks.join("\n") : th.text || "…";
   closeSheets(true);
