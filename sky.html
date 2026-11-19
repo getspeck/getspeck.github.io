@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://appleid.cdn-apple.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://appleid.cdn-apple.com; img-src 'self' data: blob: https://appleid.cdn-apple.com; font-src 'self' data:; connect-src 'self' https://powfrhbkwcabmgzrdzgt.supabase.co https://wnoafyupzukojnjjyjrw.supabase.co https://appleid.apple.com https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com https://appleid.apple.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://appleid.cdn-apple.com https://challenges.cloudflare.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://appleid.cdn-apple.com; img-src 'self' data: blob: https://appleid.cdn-apple.com; font-src 'self' data:; connect-src 'self' https://powfrhbkwcabmgzrdzgt.supabase.co https://wnoafyupzukojnjjyjrw.supabase.co https://appleid.apple.com https://challenges.cloudflare.com https://cloudflareinsights.com; frame-src https://challenges.cloudflare.com https://appleid.apple.com; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>The Sky · Speck</title>
 <meta name="description" content="Explore the Sky live, with everyone. Release a demo thought before Genesis.">
@@ -115,6 +115,8 @@
   @media (hover: hover) and (pointer: fine) { .hint .touch { display: none; } .hint .mouse { display: inline; } }
   @media (prefers-reduced-motion: reduce) { .sheet { transition: none; } }
 </style>
+<!-- Cloudflare Web Analytics: page views only, no cookies or local storage, nothing that identifies a visitor. -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "c8e848d3138940cc852aee0a0df03e98"}'></script>
 </head>
 <body>
 <canvas id="sky" aria-label="The Sky. Drag to look around, scroll or swipe up with two fingers to travel through time, pinch to look closer, tap a star to read it."></canvas>

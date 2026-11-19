@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://cloudflareinsights.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Privacy Policy · Speck</title>
 <meta name="description" content="How Speck handles your data: anonymous by design, permanent by choice.">
@@ -31,12 +31,14 @@
   footer { max-width: 680px; margin: 0 auto; padding: 0 16px 48px; color: var(--faint); font-size: 14px; }
   footer a { color: var(--faint); }
 </style>
+<!-- Cloudflare Web Analytics: page views only, no cookies or local storage, nothing that identifies a visitor. -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "c8e848d3138940cc852aee0a0df03e98"}'></script>
 </head>
 <body>
 <main>
   <nav><a href="./">← Speck</a></nav>
   <h1>Privacy Policy</h1>
-  <p class="date">Effective November 15, 2026</p>
+  <p class="date">Effective November 19, 2026</p>
 
   <div class="summary">
     <ul>
@@ -61,6 +63,7 @@
     <li><strong>Your blank specks and purchases.</strong> Your balance and a ledger of how it changed. For purchases: the product, the store (App Store or Stripe), the transaction ID, and the date. We never receive your card or bank details.</li>
     <li><strong>Distill.</strong> When you use Distill, the draft you asked about is sent to our AI provider to suggest shorter versions. We count how many times you've used it.</li>
     <li><strong>Notifications, if you allow them.</strong> A push token from Apple so we can tell you, for example, that someone felt your thought.</li>
+    <li><strong>Website visits.</strong> getspeck.app uses Cloudflare Web Analytics to count visits: the page, the site that sent you, your browser and device type, and your country. It uses no cookies or local storage and doesn't identify or follow you. The app doesn't use it.</li>
     <li><strong>Technical information.</strong> Our hosting providers keep standard server logs, which can include IP addresses and device or browser details, for security and reliability.</li>
   </ul>
   <p>Dictation uses Apple's speech recognition, on your device when your iPhone supports it. Speck doesn't receive or keep audio.</p>
@@ -89,7 +92,7 @@
     <li><strong>RevenueCat</strong>: keeps track of purchases and Speck Plus across the App Store and the web. It receives your Speck account ID and your purchase history.</li>
     <li><strong>Stripe</strong>: payments on the website. With Stripe Managed Payments, Stripe is the seller of record for web purchases and handles tax and payment details under its own privacy policy.</li>
     <li><strong>Anthropic</strong>: the Claude AI models that check thoughts for safety and power Distill. They receive the text of the thought or draft, not your identity.</li>
-    <li><strong>Cloudflare</strong>: delivers the Sky to the app quickly, and its Turnstile service checks that a person, not a bot, is creating an account or releasing from the website. Turnstile is covered by Cloudflare's <a href="https://www.cloudflare.com/turnstile-privacy-policy/">Turnstile Privacy Addendum</a>.</li>
+    <li><strong>Cloudflare</strong>: delivers the Sky to the app quickly, and its Turnstile service checks that a person, not a bot, is creating an account or releasing from the website. Turnstile is covered by Cloudflare's <a href="https://www.cloudflare.com/turnstile-privacy-policy/">Turnstile Privacy Addendum</a>. Cloudflare Web Analytics counts visits to the website without cookies.</li>
   </ul>
   <p>We may also disclose information if the law requires it, or to protect someone's safety.</p>
 
